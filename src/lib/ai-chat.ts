@@ -200,11 +200,29 @@ export interface BrainPrefs {
   prioritizeSpecialists?: boolean;
   /** Ansambl konsenzus ("super točnost") — više modela paralelno. */
   ensemble?: boolean;
+  /** Turbo — brzi odgovori: 1 prolaz po modelu, manji ansambl, niži maxTokens. */
+  turbo?: boolean;
 }
 
 function loadPrefs(): BrainPrefs {
   return loadJSON<BrainPrefs>("tm.brain.prefs", { primary: "openrouter", prioritizeSpecialists: true });
 }
+
+/** Blaga zaštita od zastoja: vrati null ako pomoćni motor ne stigne na vrijeme. */
+async function withDeadline<T>(p: Promise<T>, ms: number): Promise<T | null> {
+  let t: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      p,
+      new Promise<null>((resolve) => {
+        t = setTimeout(() => resolve(null), ms);
+      }),
+    ]);
+  } finally {
+    if (t) clearTimeout(t);
+  }
+}
+
 
 export async function askAi(
   userText: string,

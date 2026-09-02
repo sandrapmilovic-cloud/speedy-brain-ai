@@ -278,7 +278,8 @@ export async function runOmni(
     if (!p.brains[b]) return;
     if (!hasKey(KEY_FOR[b])) return;
     brainsUsed.push(b);
-    for (const model of modelsFor(b, p)) {
+    for (const model of modelsFor(b, pEff)) {
+
       jobs.push(
         (async () => {
           const runs: Omit<OmniEstimate, "brain" | "model">[] = [];

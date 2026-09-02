@@ -14,6 +14,7 @@ import { loadSuper, superPromptDirectives } from "./superaccuracy";
 import { loadAntiError, antiErrorDirectives, antiErrorActive } from "./antierror";
 import { loadSniper, sniperDirectives } from "./sniper";
 import { loadQuantum, quantumActive, quantumDirectives } from "./quantum";
+import { loadGoalFormula, goalFormulaDirectives } from "./goalformula";
 import { loadTitan, titanDirectives } from "./titan";
 import {
   loadMastermind,

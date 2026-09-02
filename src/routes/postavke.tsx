@@ -64,6 +64,8 @@ interface BrainPrefs {
   nimModel?: string;
   prioritizeSpecialists?: boolean;
   ensemble?: boolean;
+  turbo?: boolean;
+
 }
 
 export const Route = createFileRoute("/postavke")({

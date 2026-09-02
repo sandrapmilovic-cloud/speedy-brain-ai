@@ -20,7 +20,7 @@ export function InstallApp() {
     const onInstalled = () => {
       setInstalled(true);
       setDeferred(null);
-      toast.success("Andromeda AI je instalirana.");
+      toast.success("Andromeda AI je uspješno instalirana.");
     };
     window.addEventListener("beforeinstallprompt", onPrompt);
     window.addEventListener("appinstalled", onInstalled);
@@ -33,37 +33,44 @@ export function InstallApp() {
 
   async function install() {
     if (!deferred) {
-      toast.info("Chrome još nije ponudio instalaciju — otvori izbornik ⋮ → „Instaliraj aplikaciju“.");
+      toast.info("Preglednik još nije spreman. Pokušaj preko izbornika (tri točkice) -> „Instaliraj aplikaciju“.");
       return;
     }
     await deferred.prompt();
     const res = await deferred.userChoice;
-    if (res.outcome === "accepted") setInstalled(true);
+    if (res.outcome === "accepted") {
+      setInstalled(true);
+      toast.success("Hvala što ste instalirali Andromeda AI!");
+    }
     setDeferred(null);
   }
 
   return (
     <section className="rounded-2xl border border-primary/40 bg-primary/5 p-5">
       <h2 className="flex items-center gap-2 text-lg font-semibold">
-        <Smartphone className="h-5 w-5 text-primary" /> Instaliraj Andromeda AI (PC i mobitel)
+        <Smartphone className="h-5 w-5 text-primary" /> Instaliraj Andromeda AI (PWA)
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Aplikacija je PWA — instalira se kroz Chrome na Windows, macOS, Linux i Android, s crveno-bijelom piramidom kao ikonom. Radi u vlastitom prozoru, bez adresne trake.
+        Instalirajte aplikaciju na svoj PC ili mobitel. Andromeda AI radi u vlastitom prozoru, bez adresne trake i brže se pokreće.
       </p>
       <button
         onClick={() => void install()}
         disabled={installed}
         className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
+        style={{ boxShadow: installed ? "none" : "var(--shadow-glow)" }}
       >
         {installed ? <Check className="h-4 w-4" /> : <Download className="h-4 w-4" />}
-        {installed ? "Već je instalirana" : "Instaliraj aplikaciju"}
+        {installed ? "Aplikacija je instalirana" : "Instaliraj aplikaciju"}
       </button>
-      <ul className="mt-4 list-disc space-y-1 pl-5 text-xs text-muted-foreground">
-        <li>Chrome / Edge (PC): ikona instalacije u adresnoj traci ili izbornik ⋮ → „Instaliraj Andromeda AI“.</li>
-        <li>Android Chrome: izbornik ⋮ → „Instaliraj aplikaciju“ / „Dodaj na početni zaslon“.</li>
-        <li>iPhone Safari: Podijeli → „Dodaj na početni zaslon“.</li>
-        <li>Instalacija radi na objavljenoj (https) verziji — u Lovable pregledu unutar okvira je onemogućena.</li>
-      </ul>
+      <div className="mt-4 space-y-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Upute za instalaciju:</h3>
+        <ul className="list-disc space-y-1 pl-5 text-xs text-muted-foreground">
+          <li><strong>Chrome / Edge (PC):</strong> Kliknite na ikonu instalacije u adresnoj traci ili ⋮ -> „Instaliraj Andromeda AI“.</li>
+          <li><strong>Android:</strong> Izbornik ⋮ -> „Instaliraj aplikaciju“ ili „Dodaj na početni zaslon“.</li>
+          <li><strong>iPhone (Safari):</strong> Kliknite „Podijeli“ (Share) -> „Dodaj na početni zaslon“ (Add to Home Screen).</li>
+          <li>Instalacija je dostupna samo na objavljenoj HTTPS verziji stranice.</li>
+        </ul>
+      </div>
     </section>
   );
 }

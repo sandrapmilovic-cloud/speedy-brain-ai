@@ -461,6 +461,22 @@ function BrainRouter() {
           </span>
         </span>
       </label>
+      <label className="mt-2 flex items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={prefs.turbo ?? false}
+          onChange={(e) => save({ ...prefs, turbo: e.target.checked })}
+          className="mt-0.5 h-4 w-4"
+        />
+        <span>
+          <strong>Brzi odgovori (Turbo)</strong>
+          <span className="block text-xs text-muted-foreground">
+            Svi moduli i dalje rade, ali se pozivi manje ponavljaju: 1 prolaz po modelu, ansambl do 3 člana i
+            kraći odgovori motora. Ako pomoćni motor kasni, odgovor ide dalje bez njegovog briefinga.
+          </span>
+        </span>
+      </label>
+
     </section>
   );
 }

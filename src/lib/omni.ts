@@ -163,7 +163,12 @@ function parseEst(raw: string): Omit<OmniEstimate, "brain" | "model"> | null {
   }
 }
 
-async function callBrain(brain: OmniBrain, model: string, text: string): Promise<string> {
+async function callBrain(
+  brain: OmniBrain,
+  model: string,
+  text: string,
+  maxTokens = 700,
+): Promise<string> {
   const sys = "Vrati isključivo valjani JSON, bez markdowna i bez teksta oko njega.";
   switch (brain) {
     case "openrouter": {
@@ -171,20 +176,20 @@ async function callBrain(brain: OmniBrain, model: string, text: string): Promise
         { role: "system", content: sys },
         { role: "user", content: text },
       ];
-      return openrouterChat(model, msgs, { temperature: 0.2, maxTokens: 700, extraFallbacks: [] });
+      return openrouterChat(model, msgs, { temperature: 0.2, maxTokens, extraFallbacks: [] });
     }
     case "nvidia": {
       const msgs: NimMessage[] = [
         { role: "system", content: sys },
         { role: "user", content: text },
       ];
-      return nvidiaChat(model, msgs, { temperature: 0.2, maxTokens: 700 });
+      return nvidiaChat(model, msgs, { temperature: 0.2, maxTokens });
     }
     case "huggingface":
       return huggingfaceChat(model, [
         { role: "system", content: sys },
         { role: "user", content: text },
-      ], { temperature: 0.2, maxTokens: 700 });
+      ], { temperature: 0.2, maxTokens });
     case "groq":
       return groqChat([
         { role: "system", content: sys },
@@ -285,7 +290,7 @@ export async function runOmni(
           const runs: Omit<OmniEstimate, "brain" | "model">[] = [];
           for (let i = 1; i <= passes; i++) {
             try {
-              const raw = await callBrain(b, model, prompt(userText, ctx, priorTotal, i));
+              const raw = await callBrain(b, model, prompt(userText, ctx, priorTotal, i), opts.turbo ? 420 : 700);
               const parsed = parseEst(raw);
               if (parsed) runs.push(parsed);
             } catch {

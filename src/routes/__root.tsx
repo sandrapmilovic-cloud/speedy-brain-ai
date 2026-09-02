@@ -11,6 +11,8 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { Toaster } from "sonner";
+import { AppShell } from "../components/AppShell";
 
 function NotFoundComponent() {
   return (
@@ -76,22 +78,40 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { name: "theme-color", content: "#e11d2e" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "Andromeda AI" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { title: "Andromeda AI — Početna" },
+      {
+        name: "description",
+        content:
+          "Tri dashboarda: kalkulator predikcija, AI chat mozak i live nogomet. Sve na hrvatskom.",
+      },
+      { name: "author", content: "Andromeda AI" },
+      { property: "og:title", content: "Andromeda AI — Početna" },
+      {
+        property: "og:description",
+        content: "Tri dashboarda: kalkulator predikcija, AI chat mozak i live nogomet. Sve na hrvatskom.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Andromeda AI — Početna" },
+      { name: "twitter:description", content: "Tri dashboarda: kalkulator predikcija, AI chat mozak i live nogomet. Sve na hrvatskom." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/f9745016-7e41-4413-9c7f-e804e785e729/id-preview-fe5efe10--d7233d3f-ccad-4312-b7a9-a6ec7e371946.lovable.app-1784751962614.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/f9745016-7e41-4413-9c7f-e804e785e729/id-preview-fe5efe10--d7233d3f-ccad-4312-b7a9-a6ec7e371946.lovable.app-1784751962614.png" },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.png", type: "image/png" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+      { rel: "icon", href: "/favicon.png", type: "image/png", sizes: "512x512" },
     ],
   }),
   shellComponent: RootShell,
@@ -102,11 +122,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="hr" className="dark">
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body className="min-h-screen bg-background text-foreground antialiased">
         {children}
         <Scripts />
       </body>
@@ -119,8 +139,10 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <AppShell>
+        <Outlet />
+      </AppShell>
+      <Toaster theme="dark" position="top-right" richColors />
     </QueryClientProvider>
   );
 }

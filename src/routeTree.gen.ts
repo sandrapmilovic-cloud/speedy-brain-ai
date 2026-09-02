@@ -10,33 +10,115 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ChatRouteImport } from './routes/chat'
+import { Route as KalkulatorRouteImport } from './routes/kalkulator'
+import { Route as PostavkeRouteImport } from './routes/postavke'
+import { Route as UzivoRouteImport } from './routes/uzivo'
+import { Route as ApiPublicFootballDataRouteImport } from './routes/api/public/football-data'
+import { Route as ApiPublicNvidiaRouteImport } from './routes/api/public/nvidia'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChatRoute = ChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KalkulatorRoute = KalkulatorRouteImport.update({
+  id: '/kalkulator',
+  path: '/kalkulator',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PostavkeRoute = PostavkeRouteImport.update({
+  id: '/postavke',
+  path: '/postavke',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UzivoRoute = UzivoRouteImport.update({
+  id: '/uzivo',
+  path: '/uzivo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicFootballDataRoute = ApiPublicFootballDataRouteImport.update({
+  id: '/api/public/football-data',
+  path: '/api/public/football-data',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicNvidiaRoute = ApiPublicNvidiaRouteImport.update({
+  id: '/api/public/nvidia',
+  path: '/api/public/nvidia',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/chat': typeof ChatRoute
+  '/kalkulator': typeof KalkulatorRoute
+  '/postavke': typeof PostavkeRoute
+  '/uzivo': typeof UzivoRoute
+  '/api/public/football-data': typeof ApiPublicFootballDataRoute
+  '/api/public/nvidia': typeof ApiPublicNvidiaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/chat': typeof ChatRoute
+  '/kalkulator': typeof KalkulatorRoute
+  '/postavke': typeof PostavkeRoute
+  '/uzivo': typeof UzivoRoute
+  '/api/public/football-data': typeof ApiPublicFootballDataRoute
+  '/api/public/nvidia': typeof ApiPublicNvidiaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/chat': typeof ChatRoute
+  '/kalkulator': typeof KalkulatorRoute
+  '/postavke': typeof PostavkeRoute
+  '/uzivo': typeof UzivoRoute
+  '/api/public/football-data': typeof ApiPublicFootballDataRoute
+  '/api/public/nvidia': typeof ApiPublicNvidiaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/chat'
+    | '/kalkulator'
+    | '/postavke'
+    | '/uzivo'
+    | '/api/public/football-data'
+    | '/api/public/nvidia'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/chat'
+    | '/kalkulator'
+    | '/postavke'
+    | '/uzivo'
+    | '/api/public/football-data'
+    | '/api/public/nvidia'
+  id:
+    | '__root__'
+    | '/'
+    | '/chat'
+    | '/kalkulator'
+    | '/postavke'
+    | '/uzivo'
+    | '/api/public/football-data'
+    | '/api/public/nvidia'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ChatRoute: typeof ChatRoute
+  KalkulatorRoute: typeof KalkulatorRoute
+  PostavkeRoute: typeof PostavkeRoute
+  UzivoRoute: typeof UzivoRoute
+  ApiPublicFootballDataRoute: typeof ApiPublicFootballDataRoute
+  ApiPublicNvidiaRoute: typeof ApiPublicNvidiaRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +130,59 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/chat': {
+      id: '/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof ChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kalkulator': {
+      id: '/kalkulator'
+      path: '/kalkulator'
+      fullPath: '/kalkulator'
+      preLoaderRoute: typeof KalkulatorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/postavke': {
+      id: '/postavke'
+      path: '/postavke'
+      fullPath: '/postavke'
+      preLoaderRoute: typeof PostavkeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/uzivo': {
+      id: '/uzivo'
+      path: '/uzivo'
+      fullPath: '/uzivo'
+      preLoaderRoute: typeof UzivoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/football-data': {
+      id: '/api/public/football-data'
+      path: '/api/public/football-data'
+      fullPath: '/api/public/football-data'
+      preLoaderRoute: typeof ApiPublicFootballDataRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/nvidia': {
+      id: '/api/public/nvidia'
+      path: '/api/public/nvidia'
+      fullPath: '/api/public/nvidia'
+      preLoaderRoute: typeof ApiPublicNvidiaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ChatRoute: ChatRoute,
+  KalkulatorRoute: KalkulatorRoute,
+  PostavkeRoute: PostavkeRoute,
+  UzivoRoute: UzivoRoute,
+  ApiPublicFootballDataRoute: ApiPublicFootballDataRoute,
+  ApiPublicNvidiaRoute: ApiPublicNvidiaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -163,6 +163,7 @@ function PostavkePage() {
       />
 
       <BrainRouter />
+      <GoalFormulaPanel />
       <QuantumPanel />
       <MastermindPanel />
       <OmniPanel />

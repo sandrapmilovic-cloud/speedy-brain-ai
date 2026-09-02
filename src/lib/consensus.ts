@@ -121,13 +121,20 @@ function parseMember(raw: string): Omit<MemberEstimate, "model" | "name"> | null
 }
 
 /** Pokreće ansambl i vraća spojenu procjenu. Baca grešku ako nitko ne odgovori. */
-export async function runConsensus(market: Market, userText: string, ctx: string): Promise<ConsensusResult> {
+export async function runConsensus(
+  market: Market,
+  userText: string,
+  ctx: string,
+  opts: { turbo?: boolean } = {},
+): Promise<ConsensusResult> {
   const a = loadAccuracy();
   const sp = loadSuper();
-  const team = ensembleForMarket(market).slice(0, Math.max(3, Math.min(a.members, 9)));
+  // Turbo: ansambl ograničen na 3 člana, 1 prolaz, niži maxTokens.
+  const teamSize = opts.turbo ? 3 : Math.max(3, Math.min(a.members, 9));
+  const team = ensembleForMarket(market).slice(0, teamSize);
   if (!team.length) throw new Error("Nema aktivnih modela za ansambl.");
   const priorTotal = a.leaguePrior ? leaguePriorTotal(`${userText} ${ctx}`) : 2.68;
-  const passes = Math.max(1, Math.min(a.passes, 3));
+  const passes = opts.turbo ? 1 : Math.max(1, Math.min(a.passes, 3));
 
   const settled = await Promise.allSettled(
     team.map(async (s) => {
@@ -136,7 +143,7 @@ export async function runConsensus(market: Market, userText: string, ctx: string
         try {
           const raw = await openrouterChat(s.id, memberPrompt(market, userText, ctx, p, priorTotal, sp), {
             temperature: p === 1 ? 0.15 : 0.45,
-            maxTokens: 700,
+            maxTokens: opts.turbo ? 420 : 700,
             extraFallbacks: [],
           });
           const parsed = parseMember(raw);

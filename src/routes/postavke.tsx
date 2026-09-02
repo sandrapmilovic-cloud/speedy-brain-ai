@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Settings, Eye, EyeOff, TestTube2, Check, Download, ExternalLink, Brain, Sparkles, Zap, Mic, Volume2 } from "lucide-react";
+// Ovdje je dodana linija koja je nedostajala:
+import { loadGoalFormula, saveGoalFormula, computeGoalFormula, DEFAULT_GOAL_FORMULA, type GoalFormulaPrefs } from "@/lib/goalformula";
 import {
   loadVoicePrefs,
   saveVoicePrefs,
@@ -769,7 +771,7 @@ function VoicePanel() {
       </div>
       <p className="text-sm text-muted-foreground">
         Luna sluša i odgovara na izvornom hrvatskom jeziku. Odaberi glas, podesi brzinu, visinu i glasnoću —
-        postavke se odmah primjenjuju u chatu.
+        postavke se odmah primjenjuju i u chatu.
       </p>
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block text-xs sm:col-span-2">
@@ -1050,7 +1052,7 @@ function SpecialistsPanelInner() {
           ⏱️ NAPREDNI HT/FT & POLUVRIJEME ANSAMBL — super točnost
         </h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          Zaseban ansambl za poluvrijeme/kraj, X na poluvremenu i golove do odmora. Modeli odvojeno računaju λ prvog i
+          Zaseban ansambl za poluvrijeme/kraj, X na poluvremenu i golovi do odmora. Modeli odvojeno računaju λ prvog i
           drugog poluvremena, a aplikacija ih spaja s egzaktnom HT/FT matricom od 9 kombinacija (modul „v7 · HT/FT puna
           matrica“ gore).
         </p>

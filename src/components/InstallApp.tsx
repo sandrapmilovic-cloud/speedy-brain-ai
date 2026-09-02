@@ -33,7 +33,7 @@ export function InstallApp() {
 
   async function install() {
     if (!deferred) {
-      toast.info("Preglednik još nije spreman. Pokušaj preko izbornika (tri točkice) -> „Instaliraj aplikaciju“.");
+      toast.info("Preglednik još nije spreman. Pokušaj preko izbornika (tri točkice) → „Instaliraj aplikaciju“.");
       return;
     }
     await deferred.prompt();
@@ -65,9 +65,9 @@ export function InstallApp() {
       <div className="mt-4 space-y-2">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Upute za instalaciju:</h3>
         <ul className="list-disc space-y-1 pl-5 text-xs text-muted-foreground">
-          <li><strong>Chrome / Edge (PC):</strong> Kliknite na ikonu instalacije u adresnoj traci ili ⋮ -> „Instaliraj Andromeda AI“.</li>
-          <li><strong>Android:</strong> Izbornik ⋮ -> „Instaliraj aplikaciju“ ili „Dodaj na početni zaslon“.</li>
-          <li><strong>iPhone (Safari):</strong> Kliknite „Podijeli“ (Share) -> „Dodaj na početni zaslon“ (Add to Home Screen).</li>
+          <li><strong>Chrome / Edge (PC):</strong> Kliknite na ikonu instalacije u adresnoj traci ili ⋮ {"→"} „Instaliraj Andromeda AI“.</li>
+          <li><strong>Android:</strong> Izbornik ⋮ {"→"} „Instaliraj aplikaciju“ ili „Dodaj na početni zaslon“.</li>
+          <li><strong>iPhone (Safari):</strong> Kliknite „Podijeli“ (Share) {"→"} „Dodaj na početni zaslon“.</li>
           <li>Instalacija je dostupna samo na objavljenoj HTTPS verziji stranice.</li>
         </ul>
       </div>

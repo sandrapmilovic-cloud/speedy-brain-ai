@@ -245,8 +245,9 @@ export async function askAi(
   const quantum = loadQuantum();
   const quantumOn = quantumActive(quantum, market);
 
-  // ── OMNI GOL MOTOR: svi mozgovi + svi modeli za BTTS i Over/Under 2.5
+  // ── OMNI GOL MOTOR + ANSAMBL KONSENZUS teku PARALELNO (Promise.all)
   let omniBlock = "";
+  let consensusBlock = "";
   const omni = mmOn ? boostOmni(mm, loadOmni()) : loadOmni();
   const anti = mmOn ? boostAntiError(mm, loadAntiError()) : loadAntiError();
   const antiOn = antiErrorActive(anti, market);
@@ -254,38 +255,45 @@ export async function askAi(
   const sniperPrefs = mmOn ? boostSniper(mm, loadSniper()) : loadSniper();
   const titanForce =
     Boolean(titanPrefs.on.unifiedConsensus && titanPrefs.scope.unifiedConsensus?.[market]);
-  if (
+
+  const turbo = prefs.turbo === true;
+  const deadlineMs = turbo ? 22000 : 60000;
+
+  const omniWanted =
     (omni.enabled ||
       (antiOn && anti.forceEngines) ||
       titanForce ||
       (quantumOn && quantum.autoEngines)) &&
-    (market === "btts" || market === "ou25")
-  ) {
-    try {
-      const o = await runOmni(market, userText, ctx);
-      omniBlock = "\n\n" + omniBriefing(o);
-    } catch (e) {
-      console.warn("OMNI motor nije uspio:", e);
-    }
-  }
+    (market === "btts" || market === "ou25");
 
-  // ── Ansambl konsenzus: numerička procjena više modela prije finalnog odgovora
-  let consensusBlock = "";
-  if (
+  const consensusWanted =
     (prefs.ensemble !== false ||
       (antiOn && anti.forceEngines) ||
       (mmOn && mm.autoEngines) ||
       (quantumOn && quantum.autoEngines)) &&
     market !== "opce" &&
-    hasKey("openrouter")
-  ) {
-    try {
-      const c = await runConsensus(market, userText, ctx);
-      consensusBlock = "\n\n" + consensusBriefing(c);
-    } catch (e) {
-      console.warn("Ansambl nije uspio, nastavljam s jednim specijalistom:", e);
-    }
-  }
+    hasKey("openrouter");
+
+  const omniTask = omniWanted
+    ? withDeadline(runOmni(market as "btts" | "ou25", userText, ctx, { turbo }), deadlineMs).catch(
+        (e) => {
+          console.warn("OMNI motor nije uspio:", e);
+          return null;
+        },
+      )
+    : Promise.resolve(null);
+
+  const consensusTask = consensusWanted
+    ? withDeadline(runConsensus(market, userText, ctx, { turbo }), deadlineMs).catch((e) => {
+        console.warn("Ansambl nije uspio, nastavljam s jednim specijalistom:", e);
+        return null;
+      })
+    : Promise.resolve(null);
+
+  const [omniRes, consensusRes] = await Promise.all([omniTask, consensusTask]);
+  if (omniRes) omniBlock = "\n\n" + omniBriefing(omniRes);
+  if (consensusRes) consensusBlock = "\n\n" + consensusBriefing(consensusRes);
+
   const superPrefs = mmOn ? boostSuper(mm, loadSuper()) : loadSuper();
   const superDirectives =
     superPromptDirectives(superPrefs, market) +

@@ -12,6 +12,11 @@ export const Route = createFileRoute("/")({
         content:
           "Tri dashboarda: kalkulator predikcija, AI chat mozak i live nogomet. Sve na hrvatskom.",
       },
+      // Dodana meta oznaka za autora:
+      {
+        name: "author",
+        content: "Goran Pavić",
+      },
     ],
   }),
   component: Index,

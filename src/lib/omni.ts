@@ -248,12 +248,22 @@ const ALT_LABEL: Record<OmniMarket, string> = {
 };
 
 /** Pokreće OMNI motor. Baca grešku ako nijedan mozak ne odgovori. */
-export async function runOmni(market: OmniMarket, userText: string, ctx: string): Promise<OmniResult> {
+export async function runOmni(
+  market: OmniMarket,
+  userText: string,
+  ctx: string,
+  opts: { turbo?: boolean } = {},
+): Promise<OmniResult> {
   const p = loadOmni();
   const a = loadAccuracy();
   const sp = loadSuper();
   const priorTotal = leaguePriorTotal(`${userText} ${ctx}`);
-  const passes = Math.max(1, Math.min(3, p.passes));
+  // Turbo: 1 prolaz po modelu i najviše 2 modela po mozgu (svi moduli ostaju).
+  const passes = opts.turbo ? 1 : Math.max(1, Math.min(3, p.passes));
+  const pEff: OmniPrefs = opts.turbo
+    ? { ...p, passes: 1, modelsPerBrain: Math.min(2, p.modelsPerBrain) }
+    : p;
+
 
   const jobs: Array<Promise<OmniEstimate | null>> = [];
   const brainsUsed: OmniBrain[] = [];

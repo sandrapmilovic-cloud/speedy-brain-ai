@@ -80,8 +80,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
       </header>
       <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>
-      <footer className="mx-auto max-w-7xl px-4 py-8 text-center text-xs text-muted-foreground">
-        Andromeda AI · Kladi se odgovorno · 18+
+      <footer className="mx-auto max-w-7xl px-4 py-8 text-center text-xs text-muted-foreground border-t border-border/20 mt-auto">
+        <div className="mb-1 font-medium">Aplikaciju izradio Goran Pavić</div>
+        <div>Andromeda AI · Kladi se odgovorno · 18+</div>
       </footer>
     </div>
   );

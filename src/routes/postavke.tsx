@@ -212,6 +212,98 @@ function PostavkePage() {
   );
 }
 
+function GoalFormulaPanel() {
+  const [p, setP] = useState<GoalFormulaPrefs>(DEFAULT_GOAL_FORMULA);
+  useEffect(() => setP(loadGoalFormula()), []);
+  function upd(patch: Partial<GoalFormulaPrefs>) {
+    const next = { ...p, ...patch };
+    setP(next);
+    saveGoalFormula(next);
+  }
+  const r = computeGoalFormula(p);
+  const num = (label: string, key: keyof GoalFormulaPrefs, step = 0.05, hint?: string) => (
+    <label key={String(key)} className="block text-xs">
+      <span className="text-muted-foreground">{label}</span>
+      <input
+        type="number"
+        step={step}
+        value={Number(p[key])}
+        onChange={(e) => upd({ [key]: Number(e.target.value) } as unknown as Partial<GoalFormulaPrefs>)}
+        className="mt-1 w-full rounded-lg border border-input bg-background/60 px-3 py-2 text-sm tabular-nums"
+      />
+      {hint ? <span className="mt-0.5 block text-[10px] text-muted-foreground">{hint}</span> : null}
+    </label>
+  );
+
+  return (
+    <section className="rounded-2xl border border-primary/40 bg-card p-5">
+      <h2 className="flex items-center gap-2 text-lg font-semibold">
+        <Sparkles className="h-5 w-5 text-primary" /> Napredna formula — BTTS i Over/Under 2.5
+      </h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Poissonova matrica 0–8 s Dixon-Coles korekcijom. Uključi ju ručno; dok je uključena, chat bot ju
+        obavezno uzima u obzir kod donošenja tipa za BTTS i Over/Under 2.5.
+      </p>
+      <label className="mt-4 flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={p.enabled}
+          onChange={(e) => {
+            upd({ enabled: e.target.checked });
+            toast.success(e.target.checked ? "Napredna formula je aktivirana." : "Formula je isključena.");
+          }}
+          className="h-4 w-4"
+        />
+        <strong>Ručno aktiviraj formulu</strong>
+      </label>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        {num("Domaćin zabija (prosjek)", "homeFor")}
+        {num("Domaćin prima", "homeAgainst")}
+        {num("Gost zabija", "awayFor")}
+        {num("Gost prima", "awayAgainst")}
+        {num("Prosjek lige (golova)", "leagueAvg")}
+        {num("Prednost domaćeg terena", "homeAdvantage", 0.01)}
+        {num("Dixon-Coles ρ", "rho", 0.01, "niski rezultati; obično −0.05 do 0")}
+        {num("Prag sigurnosti (%)", "minConfidence", 1, "ispod praga formula savjetuje preskok")}
+        {num("Kvota BTTS DA", "oddsBtts", 0.01, "0 = bez računa vrijednosti")}
+        {num("Kvota Over 2.5", "oddsOver25", 0.01, "0 = bez računa vrijednosti")}
+      </div>
+
+      <div className="mt-4 rounded-xl border border-border/60 bg-background/50 p-4 text-sm">
+        <div className="grid gap-2 sm:grid-cols-3 tabular-nums">
+          <div>λ domaćin: <span className="font-mono text-primary">{r.lambdaHome}</span></div>
+          <div>λ gost: <span className="font-mono text-primary">{r.lambdaAway}</span></div>
+          <div>Ukupno golova: <span className="font-mono text-primary">{r.total}</span></div>
+          <div>BTTS DA: <span className="font-mono text-primary">{r.pBtts}%</span></div>
+          <div>Over 2.5: <span className="font-mono text-primary">{r.pOver25}%</span></div>
+          <div>Under 2.5: <span className="font-mono text-primary">{r.pUnder25}%</span></div>
+        </div>
+        <div className="mt-3 text-sm">
+          Preporuka formule: <strong className="text-primary">{r.topPick}</strong> ({r.confidence}%)
+          {r.skip ? " — ispod praga, preporuka je preskočiti." : ""}
+        </div>
+        {r.edgeBtts !== null || r.edgeOver !== null ? (
+          <div className="mt-1 text-xs text-muted-foreground">
+            {r.edgeBtts !== null ? `Edge BTTS: ${r.edgeBtts}% · ` : ""}
+            {r.edgeOver !== null ? `Edge Over 2.5: ${r.edgeOver}%` : ""}
+          </div>
+        ) : null}
+      </div>
+      <button
+        onClick={() => {
+          setP(DEFAULT_GOAL_FORMULA);
+          saveGoalFormula(DEFAULT_GOAL_FORMULA);
+          toast.success("Formula vraćena na zadano.");
+        }}
+        className="mt-3 rounded-lg border border-input px-3 py-1.5 text-xs hover:bg-muted"
+      >
+        Vrati zadano
+      </button>
+    </section>
+  );
+}
+
 function QuantumPanel() {
   const [p, setP] = useState<QuantumPrefs>(DEFAULT_QUANTUM);
   useEffect(() => setP(loadQuantum()), []);

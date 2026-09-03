@@ -15,6 +15,7 @@ import { loadAntiError, antiErrorDirectives, antiErrorActive } from "./antierror
 import { loadSniper, sniperDirectives } from "./sniper";
 import { loadQuantum, quantumActive, quantumDirectives } from "./quantum";
 import { loadGoalFormula, goalFormulaDirectives } from "./goalformula";
+import { loadHtFt, htFtDirectives } from "./htft";
 import { loadTitan, titanDirectives } from "./titan";
 import {
   loadMastermind,
@@ -303,7 +304,8 @@ export async function askAi(
     titanDirectives(titanPrefs, market) +
     mastermindDirectives(mm, market) +
     quantumDirectives(quantum, market) +
-    goalFormulaDirectives(loadGoalFormula());
+    goalFormulaDirectives(loadGoalFormula()) +
+    htFtDirectives(loadHtFt());
 
   const deepThinking = `\n\n═══ VRHUNSKO RAZMIŠLJANJE (v8 — vrijedi za SVAKU predikciju) ═══
 Prije svakog odgovora interno prođi: (a) izvedi λ_dom i λ_gost iz forme, xG-a, snage lige i kvota; (b) izgradi matricu rezultata 0..6 s Dixon-Coles korekcijom; (c) provjeri isti tip s bar dvije neovisne metode (matrica + Monte Carlo/kvote) i usporedi rezultate; (d) ako se metode razilaze više od tolerancije, SMANJI sigurnost i ponudi sigurniju varijantu tipa umjesto da forsiraš; (e) razdvoji poluvrijeme i drugo poluvrijeme; (f) navedi glavni rizik u jednoj rečenici. Nikad ne izmišljaj brojku koju nisi izveo — ako je pretpostavka, reci da je pretpostavka.

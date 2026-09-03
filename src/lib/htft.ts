@@ -187,6 +187,13 @@ export function computeHtFt(p: HtFtPrefs): HtFtResult {
   const r1 = (v: number) => Math.round(v * 10) / 10;
 
   const combos = HTFT_COMBOS.map((c) => ({ combo: c, p: pct(comboP[c] ?? 0) })).sort((a, b) => b.p - a.p);
+  
+  // Definicije prije korištenja u 'candidates'
+  const p1 = pct(ftP["1"]), pX = pct(ftP["X"]), p2 = pct(ftP["2"]);
+  const btts = pct(bttsRaw);
+  const over25 = pct(over25Raw);
+  const under25 = r1(100 - over25);
+
   const scores = Object.entries(scoreP)
     .map(([score, v]) => ({ score, p: Math.min(p.maxScoreProb, pct(v)) }))
     .sort((a, b) => b.p - a.p)
@@ -194,7 +201,6 @@ export function computeHtFt(p: HtFtPrefs): HtFtResult {
 
   const htTotal = Object.values(htP).reduce((a, b) => a + b, 0) || 1;
   const best = combos[0]!;
-  const p1 = pct(ftP["1"]), pX = pct(ftP["X"]), p2 = pct(ftP["2"]);
 
   const bestOutcome = Math.max(p1, pX, p2);
   const outcomeConfidence = r1(bestOutcome * 0.85 + 33.3 * 0.15);
@@ -214,7 +220,7 @@ export function computeHtFt(p: HtFtPrefs): HtFtResult {
     htX: Math.round((htP["X"] / htTotal) * 1000) / 10,
     ht2: Math.round((htP["2"] / htTotal) * 1000) / 10,
     p1X: r1(p1 + pX), p12: r1(p1 + p2), pX2: r1(pX + p2),
-    btts: pct(bttsRaw), over25: pct(over25Raw), under25: r1(100 - pct(over25Raw)),
+    btts, over25, under25,
     topCombo: best.combo, confidence: best.p, outcomeConfidence,
     safestPick: candidates[0].label, safestProb: candidates[0].p,
     skip: best.p < p.minConfidence

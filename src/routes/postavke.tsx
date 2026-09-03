@@ -1,8 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Settings, Eye, EyeOff, TestTube2, Check, Download, ExternalLink, Brain, Sparkles, Zap, Mic, Volume2 } from "lucide-react";
-// Ovdje je dodana linija koja je nedostajala:
-import { loadHtFt, saveHtFt, computeHtFt, DEFAULT_HTFT, type HtFtPrefs } from "@/lib/htft";
+import { 
+  loadHtFt, 
+  saveHtFt, 
+  computeHtFt, 
+  DEFAULT_HTFT, 
+  HTFT_MODULES, 
+  type HtFtPrefs, 
+  type HtFtModuleId 
+} from "@/lib/htft";
 import { loadGoalFormula, saveGoalFormula, computeGoalFormula, DEFAULT_GOAL_FORMULA, type GoalFormulaPrefs } from "@/lib/goalformula";
 import {
   loadVoicePrefs,
@@ -68,7 +75,6 @@ interface BrainPrefs {
   prioritizeSpecialists?: boolean;
   ensemble?: boolean;
   turbo?: boolean;
-
 }
 
 export const Route = createFileRoute("/postavke")({
@@ -224,84 +230,110 @@ function HtFtPanel() {
     setP(next);
     saveHtFt(next);
   }
+
   const r = computeHtFt(p);
-  const num = (label: string, key: keyof HtFtPrefs, step = 0.05, hint?: string) => (
+
+  const toggle = (id: HtFtModuleId) => {
+    const nextOn = { ...p.on, [id]: !p.on[id] };
+    upd({ on: nextOn });
+  };
+
+  const knob = (label: string, key: keyof HtFtPrefs, min: number, max: number, step: number, hint: string) => (
     <label key={String(key)} className="block text-xs">
-      <span className="text-muted-foreground">{label}</span>
+      <span className="flex items-center justify-between">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="font-mono text-primary">{String(p[key])}</span>
+      </span>
       <input
-        type="number"
+        type="range"
+        min={min}
+        max={max}
         step={step}
         value={Number(p[key])}
         onChange={(e) => upd({ [key]: Number(e.target.value) } as unknown as Partial<HtFtPrefs>)}
-        className="mt-1 w-full rounded-lg border border-input bg-background/60 px-3 py-2 text-sm tabular-nums"
+        className="mt-1 w-full accent-primary"
       />
-      {hint ? <span className="mt-0.5 block text-[10px] text-muted-foreground">{hint}</span> : null}
+      <span className="text-[10px] text-muted-foreground">{hint}</span>
     </label>
   );
 
   return (
-    <section className="rounded-2xl border border-primary/40 bg-card p-5">
-      <h2 className="flex items-center gap-2 text-lg font-semibold">
-        <Sparkles className="h-5 w-5 text-primary" /> Visoki stručnjak — HT/FT (svih 9 kombinacija)
-      </h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Dvije Poissonove matrice po poluvremenu s Dixon-Coles korekcijom. Dok je uključen, chat bot koristi
-        ovaj model za poluvrijeme/kraj, konačni ishod i točan rezultat — s višom točnošću i provjerom
-        konzistentnosti.
+    <section className="rounded-2xl border border-orange-500/40 bg-orange-500/5 p-5 space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-lg font-semibold flex items-center gap-2 text-orange-400">
+          <Zap className="h-5 w-5" /> HT/FT Majstor v14
+        </h2>
+        <label className="flex items-center gap-2 text-sm font-semibold">
+          <input
+            type="checkbox"
+            checked={p.enabled}
+            onChange={(e) => {
+              upd({ enabled: e.target.checked });
+              toast.success(e.target.checked ? "HT/FT Majstor aktiviran." : "HT/FT Majstor isključen.");
+            }}
+            className="h-5 w-5 accent-orange-500"
+          />
+          UKLJUČENO
+        </label>
+      </div>
+      <p className="text-sm text-muted-foreground">
+        Vrhunski modul za poluvrijeme/kraj i točne rezultate. Koristi razdvojene λ po poluvremenima (HT matrica 0-4, FT 0-6) 
+        i Dixon-Coles kalibraciju. Chat bot ovo obavezno konzultira za HT/FT tržišta.
       </p>
-      <label className="mt-4 flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={p.enabled}
-          onChange={(e) => {
-            upd({ enabled: e.target.checked });
-            toast.success(e.target.checked ? "HT/FT stručnjak je aktiviran." : "HT/FT stručnjak je isključen.");
-          }}
-          className="h-4 w-4"
-        />
-        <strong>Ručno aktiviraj HT/FT stručnjaka</strong>
-      </label>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        {num("Domaćin zabija (prosjek)", "homeFor")}
-        {num("Domaćin prima", "homeAgainst")}
-        {num("Gost zabija", "awayFor")}
-        {num("Gost prima", "awayAgainst")}
-        {num("Prosjek lige (golova)", "leagueAvg")}
-        {num("Prednost domaćeg terena", "homeAdvantage", 0.01)}
-        {num("Udio golova u 1. poluvremenu", "firstHalfShare", 0.01, "obično 0.44 – 0.47")}
-        {num("Dixon-Coles ρ", "rho", 0.01)}
-        {num("Prag sigurnosti (%)", "minConfidence", 1, "ispod praga preporuka je sigurnija linija")}
+      <div className="grid gap-4 sm:grid-cols-2">
+        {knob("Prag pouzdanosti (%)", "minConfidence", 30, 95, 1, "Ispod ovoga nudi sigurniju liniju.")}
+        {knob("Udio golova u 1. pol. (%)", "firstHalfShare", 0.30, 0.60, 0.01, "Obično 0.44 - 0.47.")}
+        {knob("Max p za točan rez. (%)", "maxScoreProb", 5, 30, 1, "Odbacuje prenapuhane vjerojatnosti rezultata.")}
+        {knob("Broj top rezultata", "topScoresCount", 1, 10, 1, "Koliko točnih rezultata prikazati botu.")}
       </div>
 
-      <div className="mt-4 rounded-xl border border-border/60 bg-background/50 p-4 text-sm">
+      <div className="grid gap-2 sm:grid-cols-2">
+        {HTFT_MODULES.map((m) => (
+          <button
+            key={m.id}
+            onClick={() => toggle(m.id)}
+            className={`flex items-start gap-2 rounded-xl border p-2.5 text-left transition ${
+              p.on[m.id] ? "border-orange-500/60 bg-orange-500/10" : "border-border/60 bg-background/40 opacity-60"
+            }`}
+          >
+            <Check className={`h-4 w-4 mt-0.5 shrink-0 ${p.on[m.id] ? "text-orange-400" : "text-transparent"}`} />
+            <span>
+              <span className="block text-xs font-semibold">{m.label}</span>
+              <span className="block text-[10px] text-muted-foreground leading-tight">{m.desc}</span>
+            </span>
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-4 rounded-xl border border-orange-500/30 bg-background/50 p-4 text-sm">
         <div className="grid gap-2 grid-cols-3 tabular-nums">
           {r.combos.map((c) => (
-            <div key={c.combo}>
-              HT/FT {c.combo}: <span className="font-mono text-primary">{c.p}%</span>
+            <div key={c.combo} className="text-xs">
+              <span className="text-muted-foreground">{c.combo}:</span> <span className="font-mono text-orange-400">{c.p}%</span>
             </div>
           ))}
         </div>
-        <div className="mt-3 grid gap-2 sm:grid-cols-3 tabular-nums text-xs text-muted-foreground">
-          <div>Konačno 1: {r.p1}%</div>
-          <div>Konačno X: {r.pX}%</div>
-          <div>Konačno 2: {r.p2}%</div>
+        <div className="mt-3 border-t border-border/40 pt-2 grid gap-2 sm:grid-cols-3 tabular-nums text-[10px] text-muted-foreground uppercase">
+          <div>Ishod 1: {r.p1}%</div>
+          <div>Ishod X: {r.pX}%</div>
+          <div>Ishod 2: {r.p2}%</div>
         </div>
-        <div className="mt-2 text-xs text-muted-foreground">
-          Najvjerojatniji rezultati: {r.scores.map((s) => `${s.score} (${s.p}%)`).join(" · ")}
+        <div className="mt-2 text-[10px] text-muted-foreground border-t border-border/40 pt-2">
+          TOP REZULTATI: {r.scores.map((s) => `${s.score} (${s.p}%)`).join(" · ")}
         </div>
-        <div className="mt-3 text-sm">
-          Preporuka: <strong className="text-primary">HT/FT {r.topCombo}</strong> ({r.confidence}%)
-          {r.skip ? " — ispod praga, bolje sigurnija linija." : ""}
+        <div className="mt-3 text-sm font-semibold">
+          Preporuka Majstora: <span className="text-orange-400">{r.topCombo}</span> ({r.confidence}%)
+          {r.skip && <span className="ml-2 text-xs text-destructive font-normal">(ISPOD PRAGA)</span>}
         </div>
       </div>
       <button
         onClick={() => {
           setP(DEFAULT_HTFT);
           saveHtFt(DEFAULT_HTFT);
-          toast.success("HT/FT stručnjak vraćen na zadano.");
+          toast.success("Vraćeno na preporučene postavke.");
         }}
-        className="mt-3 rounded-lg border border-input px-3 py-1.5 text-xs hover:bg-muted"
+        className="rounded-lg border border-border/60 px-3 py-1.5 text-xs hover:bg-muted"
       >
         Vrati zadano
       </button>

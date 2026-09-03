@@ -78,10 +78,24 @@ export interface HtFtResult {
   ht1: number;
   htX: number;
   ht2: number;
+  /** Dvostruka šansa (%). */
+  p1X: number;
+  p12: number;
+  pX2: number;
+  /** Dodatna tržišta (%). */
+  btts: number;
+  over25: number;
+  under25: number;
   topCombo: HtFtCombo;
   confidence: number;
+  /** Kalibrirana pouzdanost tipa na 1X2 (%). */
+  outcomeConfidence: number;
+  /** Preporučena najsigurnija linija po ovom modelu. */
+  safestPick: string;
+  safestProb: number;
   skip: boolean;
 }
+
 
 function pois(l: number, k: number): number {
   let f = 1;

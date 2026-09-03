@@ -129,6 +129,8 @@ export function computeHtFt(p: HtFtPrefs): HtFtResult {
   const scoreP: Record<string, number> = {};
   const htP: Record<string, number> = { "1": 0, X: 0, "2": 0 };
   const ftP: Record<string, number> = { "1": 0, X: 0, "2": 0 };
+  let bttsRaw = 0;
+  let over25Raw = 0;
 
   for (let h1 = 0; h1 <= MAX; h1++) {
     for (let a1 = 0; a1 <= MAX; a1++) {
@@ -149,6 +151,8 @@ export function computeHtFt(p: HtFtPrefs): HtFtResult {
           ftP[s2] = (ftP[s2] ?? 0) + pr;
           const sk = `${fh}:${fa}`;
           scoreP[sk] = (scoreP[sk] ?? 0) + pr;
+          if (fh > 0 && fa > 0) bttsRaw += pr;
+          if (fh + fa > 2.5) over25Raw += pr;
         }
       }
     }
@@ -156,6 +160,7 @@ export function computeHtFt(p: HtFtPrefs): HtFtResult {
 
   const total = Object.values(comboP).reduce((a, b) => a + b, 0) || 1;
   const pct = (v: number) => Math.round((v / total) * 1000) / 10;
+  const r1 = (v: number) => Math.round(v * 10) / 10;
 
   const combos = HTFT_COMBOS.map((c) => ({ combo: c, p: pct(comboP[c] ?? 0) })).sort(
     (a, b) => b.p - a.p,
@@ -168,6 +173,26 @@ export function computeHtFt(p: HtFtPrefs): HtFtResult {
   const htTotal = Object.values(htP).reduce((a, b) => a + b, 0) || 1;
   const best = combos[0]!;
 
+  const p1 = pct(ftP["1"] ?? 0);
+  const pX = pct(ftP["X"] ?? 0);
+  const p2 = pct(ftP["2"] ?? 0);
+  const btts = pct(bttsRaw);
+  const over25 = pct(over25Raw);
+
+  // Kalibracija: najbolji 1X2 tip s blagim povlačenjem prema 1/3 (shrinkage),
+  // jer čisti Poisson u pravilu precjenjuje favorita.
+  const bestOutcome = Math.max(p1, pX, p2);
+  const outcomeConfidence = r1(bestOutcome * 0.88 + 33.3 * 0.12);
+
+  const candidates: Array<{ label: string; p: number }> = [
+    { label: "1X (domaćin ne gubi)", p: r1(p1 + pX) },
+    { label: "X2 (gost ne gubi)", p: r1(pX + p2) },
+    { label: "12 (bez remija)", p: r1(p1 + p2) },
+    { label: btts >= 50 ? "GG (oba daju gol)" : "NG (oba ne daju gol)", p: r1(Math.max(btts, 100 - btts)) },
+    { label: over25 >= 50 ? "Over 2.5" : "Under 2.5", p: r1(Math.max(over25, 100 - over25)) },
+  ].sort((a, b) => b.p - a.p);
+  const safest = candidates[0]!;
+
   return {
     lambdaHome: Math.round(lh * 100) / 100,
     lambdaAway: Math.round(la * 100) / 100,
@@ -175,17 +200,27 @@ export function computeHtFt(p: HtFtPrefs): HtFtResult {
     lambdaAway1H: Math.round(la1 * 100) / 100,
     combos,
     scores,
-    p1: pct(ftP["1"] ?? 0),
-    pX: pct(ftP["X"] ?? 0),
-    p2: pct(ftP["2"] ?? 0),
+    p1,
+    pX,
+    p2,
     ht1: Math.round(((htP["1"] ?? 0) / htTotal) * 1000) / 10,
     htX: Math.round(((htP["X"] ?? 0) / htTotal) * 1000) / 10,
     ht2: Math.round(((htP["2"] ?? 0) / htTotal) * 1000) / 10,
+    p1X: r1(p1 + pX),
+    p12: r1(p1 + p2),
+    pX2: r1(pX + p2),
+    btts,
+    over25,
+    under25: r1(100 - over25),
     topCombo: best.combo,
     confidence: best.p,
+    outcomeConfidence,
+    safestPick: safest.label,
+    safestProb: safest.p,
     skip: best.p < p.minConfidence,
   };
 }
+
 
 export function htFtActive(p: HtFtPrefs): boolean {
   return p.enabled === true;

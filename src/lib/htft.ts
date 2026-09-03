@@ -78,10 +78,24 @@ export interface HtFtResult {
   ht1: number;
   htX: number;
   ht2: number;
+  /** Dvostruka šansa (%). */
+  p1X: number;
+  p12: number;
+  pX2: number;
+  /** Dodatna tržišta (%). */
+  btts: number;
+  over25: number;
+  under25: number;
   topCombo: HtFtCombo;
   confidence: number;
+  /** Kalibrirana pouzdanost tipa na 1X2 (%). */
+  outcomeConfidence: number;
+  /** Preporučena najsigurnija linija po ovom modelu. */
+  safestPick: string;
+  safestProb: number;
   skip: boolean;
 }
+
 
 function pois(l: number, k: number): number {
   let f = 1;
@@ -115,6 +129,8 @@ export function computeHtFt(p: HtFtPrefs): HtFtResult {
   const scoreP: Record<string, number> = {};
   const htP: Record<string, number> = { "1": 0, X: 0, "2": 0 };
   const ftP: Record<string, number> = { "1": 0, X: 0, "2": 0 };
+  let bttsRaw = 0;
+  let over25Raw = 0;
 
   for (let h1 = 0; h1 <= MAX; h1++) {
     for (let a1 = 0; a1 <= MAX; a1++) {
@@ -135,6 +151,8 @@ export function computeHtFt(p: HtFtPrefs): HtFtResult {
           ftP[s2] = (ftP[s2] ?? 0) + pr;
           const sk = `${fh}:${fa}`;
           scoreP[sk] = (scoreP[sk] ?? 0) + pr;
+          if (fh > 0 && fa > 0) bttsRaw += pr;
+          if (fh + fa > 2.5) over25Raw += pr;
         }
       }
     }
@@ -142,6 +160,7 @@ export function computeHtFt(p: HtFtPrefs): HtFtResult {
 
   const total = Object.values(comboP).reduce((a, b) => a + b, 0) || 1;
   const pct = (v: number) => Math.round((v / total) * 1000) / 10;
+  const r1 = (v: number) => Math.round(v * 10) / 10;
 
   const combos = HTFT_COMBOS.map((c) => ({ combo: c, p: pct(comboP[c] ?? 0) })).sort(
     (a, b) => b.p - a.p,
@@ -154,6 +173,26 @@ export function computeHtFt(p: HtFtPrefs): HtFtResult {
   const htTotal = Object.values(htP).reduce((a, b) => a + b, 0) || 1;
   const best = combos[0]!;
 
+  const p1 = pct(ftP["1"] ?? 0);
+  const pX = pct(ftP["X"] ?? 0);
+  const p2 = pct(ftP["2"] ?? 0);
+  const btts = pct(bttsRaw);
+  const over25 = pct(over25Raw);
+
+  // Kalibracija: najbolji 1X2 tip s blagim povlačenjem prema 1/3 (shrinkage),
+  // jer čisti Poisson u pravilu precjenjuje favorita.
+  const bestOutcome = Math.max(p1, pX, p2);
+  const outcomeConfidence = r1(bestOutcome * 0.88 + 33.3 * 0.12);
+
+  const candidates: Array<{ label: string; p: number }> = [
+    { label: "1X (domaćin ne gubi)", p: r1(p1 + pX) },
+    { label: "X2 (gost ne gubi)", p: r1(pX + p2) },
+    { label: "12 (bez remija)", p: r1(p1 + p2) },
+    { label: btts >= 50 ? "GG (oba daju gol)" : "NG (oba ne daju gol)", p: r1(Math.max(btts, 100 - btts)) },
+    { label: over25 >= 50 ? "Over 2.5" : "Under 2.5", p: r1(Math.max(over25, 100 - over25)) },
+  ].sort((a, b) => b.p - a.p);
+  const safest = candidates[0]!;
+
   return {
     lambdaHome: Math.round(lh * 100) / 100,
     lambdaAway: Math.round(la * 100) / 100,
@@ -161,17 +200,27 @@ export function computeHtFt(p: HtFtPrefs): HtFtResult {
     lambdaAway1H: Math.round(la1 * 100) / 100,
     combos,
     scores,
-    p1: pct(ftP["1"] ?? 0),
-    pX: pct(ftP["X"] ?? 0),
-    p2: pct(ftP["2"] ?? 0),
+    p1,
+    pX,
+    p2,
     ht1: Math.round(((htP["1"] ?? 0) / htTotal) * 1000) / 10,
     htX: Math.round(((htP["X"] ?? 0) / htTotal) * 1000) / 10,
     ht2: Math.round(((htP["2"] ?? 0) / htTotal) * 1000) / 10,
+    p1X: r1(p1 + pX),
+    p12: r1(p1 + p2),
+    pX2: r1(pX + p2),
+    btts,
+    over25,
+    under25: r1(100 - over25),
     topCombo: best.combo,
     confidence: best.p,
+    outcomeConfidence,
+    safestPick: safest.label,
+    safestProb: safest.p,
     skip: best.p < p.minConfidence,
   };
 }
+
 
 export function htFtActive(p: HtFtPrefs): boolean {
   return p.enabled === true;
@@ -191,16 +240,20 @@ Ulazi: domaćin zabija ${p.homeFor} / prima ${p.homeAgainst}; gost zabija ${p.aw
 Izračun (dvije neovisne Poissonove matrice po poluvremenu, 0–6, s DC korekcijom): λ_dom=${r.lambdaHome} (1.PV ${r.lambdaHome1H}), λ_gost=${r.lambdaAway} (1.PV ${r.lambdaAway1H}).
 SVIH 9 HT/FT KOMBINACIJA: ${table}
 Poluvrijeme: 1=${r.ht1}% · X=${r.htX}% · 2=${r.ht2}%. Konačni ishod: 1=${r.p1}% · X=${r.pX}% · 2=${r.p2}%.
+Dvostruka šansa: 1X=${r.p1X}% · 12=${r.p12}% · X2=${r.pX2}%. Golovi: GG=${r.btts}% / NG=${Math.round((100 - r.btts) * 10) / 10}% · Over 2.5=${r.over25}% / Under 2.5=${r.under25}%.
 Najvjerojatniji točni rezultati: ${sc}
-Preporuka stručnjaka: HT/FT ${r.topCombo} sa sigurnošću ${r.confidence}%.${
+Preporuka stručnjaka: HT/FT ${r.topCombo} sa sigurnošću ${r.confidence}%. Kalibrirana pouzdanost 1X2 tipa: ${r.outcomeConfidence}%. Najsigurnija linija po modelu: ${r.safestPick} (${r.safestProb}%).${
     r.skip
-      ? ` UPOZORENJE: ispod korisnikovog praga (${p.minConfidence}%) — jasno reci da je HT/FT ovdje rizičan i ponudi sigurniju liniju (dvostruka šansa, 1X2 ili "domaćin ne gubi").`
+      ? ` UPOZORENJE: ispod korisnikovog praga (${p.minConfidence}%) — jasno reci da je HT/FT ovdje rizičan i preporuči gore navedenu najsigurniju liniju umjesto HT/FT-a.`
       : ""
   }
-PRAVILA VISOKE TOČNOSTI ZA ISHOD I REZULTAT:
-1) Za pitanje "tko pobjeđuje / kakav je ishod" uvijek daj 1X2 postotke koji se zbrajaju u 100% i tek onda tip.
-2) Za točan rezultat navedi 3 najvjerojatnija ishoda s postocima; nikad ne nudi samo jedan bez alternative.
-3) HT/FT preokreti (1/2, 2/1) rijetki su — nikad im ne pripisuj sigurnost veću od ${Math.max(15, Math.round(r.confidence / 2))}% osim ako matrica to pokaže.
-4) Provjeri konzistentnost: zbroj svih 9 kombinacija = 100%, 1X2 iz kombinacija mora se poklapati s 1X2 postocima (±1 pb).
-5) Ako u kontekstu postoje stvarni podaci (forma, xG, sastavi, kvote), prilagodi λ i izričito napiši koliko si ih pomaknuo i zašto — brojke gore su korisnikovi ručni ulazi.`;
+PRAVILA VISOKE TOČNOSTI ZA ISHOD I REZULTAT (obavezno):
+1) Nikad ne izmišljaj postotke — koristi ISKLJUČIVO brojke iz ovog bloka; ako ih mijenjaš zbog stvarnih podataka (forma, xG, ozljede, sastavi, kvote), napiši staru → novu vrijednost i razlog.
+2) Za pitanje o ishodu daj 1X2 postotke (zbroj 100%), zatim tip i kalibriranu pouzdanost ${r.outcomeConfidence}% — ne navodi veću sigurnost od toga.
+3) Za točan rezultat navedi 3 najvjerojatnija s postocima; jedan točan rezultat rijetko prelazi 12% pa to jasno reci.
+4) Za HT/FT prikaži svih 9 kombinacija poredanih silazno, pa tip. Preokretima (1/2, 2/1) ne pripisuj sigurnost veću od ${Math.max(10, Math.round(r.confidence / 2))}%.
+5) Uvijek dodaj i sigurniju alternativu (dvostruka šansa / GG-NG / Over-Under) s njezinim postotkom, uz kratko obrazloženje.
+6) Provjera konzistentnosti prije slanja odgovora: zbroj 9 kombinacija = 100%, 1X2 iz kombinacija = 1X2 postocima (±1 pb), 1X+2 = 100%, GG+NG = 100%. Ako ne štima, ponovi izračun i tek onda odgovori.
+7) Struktura odgovora: (a) kratka procjena, (b) tablica postotaka, (c) glavni tip + pouzdanost, (d) sigurnija alternativa, (e) rizici. Bez praznih fraza i bez obećanja dobitka.`;
 }
+

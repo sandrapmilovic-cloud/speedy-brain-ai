@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Settings, Eye, EyeOff, TestTube2, Check, Download, ExternalLink, Brain, Sparkles, Zap, Mic, Volume2 } from "lucide-react";
 // Ovdje je dodana linija koja je nedostajala:
+import { loadHtFt, saveHtFt, computeHtFt, DEFAULT_HTFT, type HtFtPrefs } from "@/lib/htft";
 import { loadGoalFormula, saveGoalFormula, computeGoalFormula, DEFAULT_GOAL_FORMULA, type GoalFormulaPrefs } from "@/lib/goalformula";
 import {
   loadVoicePrefs,
@@ -165,6 +166,7 @@ function PostavkePage() {
       />
 
       <BrainRouter />
+      <HtFtPanel />
       <GoalFormulaPanel />
       <QuantumPanel />
       <MastermindPanel />
@@ -211,6 +213,99 @@ function PostavkePage() {
         </ul>
       </section>
     </div>
+  );
+}
+
+function HtFtPanel() {
+  const [p, setP] = useState<HtFtPrefs>(DEFAULT_HTFT);
+  useEffect(() => setP(loadHtFt()), []);
+  function upd(patch: Partial<HtFtPrefs>) {
+    const next = { ...p, ...patch };
+    setP(next);
+    saveHtFt(next);
+  }
+  const r = computeHtFt(p);
+  const num = (label: string, key: keyof HtFtPrefs, step = 0.05, hint?: string) => (
+    <label key={String(key)} className="block text-xs">
+      <span className="text-muted-foreground">{label}</span>
+      <input
+        type="number"
+        step={step}
+        value={Number(p[key])}
+        onChange={(e) => upd({ [key]: Number(e.target.value) } as unknown as Partial<HtFtPrefs>)}
+        className="mt-1 w-full rounded-lg border border-input bg-background/60 px-3 py-2 text-sm tabular-nums"
+      />
+      {hint ? <span className="mt-0.5 block text-[10px] text-muted-foreground">{hint}</span> : null}
+    </label>
+  );
+
+  return (
+    <section className="rounded-2xl border border-primary/40 bg-card p-5">
+      <h2 className="flex items-center gap-2 text-lg font-semibold">
+        <Sparkles className="h-5 w-5 text-primary" /> Visoki stručnjak — HT/FT (svih 9 kombinacija)
+      </h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Dvije Poissonove matrice po poluvremenu s Dixon-Coles korekcijom. Dok je uključen, chat bot koristi
+        ovaj model za poluvrijeme/kraj, konačni ishod i točan rezultat — s višom točnošću i provjerom
+        konzistentnosti.
+      </p>
+      <label className="mt-4 flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={p.enabled}
+          onChange={(e) => {
+            upd({ enabled: e.target.checked });
+            toast.success(e.target.checked ? "HT/FT stručnjak je aktiviran." : "HT/FT stručnjak je isključen.");
+          }}
+          className="h-4 w-4"
+        />
+        <strong>Ručno aktiviraj HT/FT stručnjaka</strong>
+      </label>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        {num("Domaćin zabija (prosjek)", "homeFor")}
+        {num("Domaćin prima", "homeAgainst")}
+        {num("Gost zabija", "awayFor")}
+        {num("Gost prima", "awayAgainst")}
+        {num("Prosjek lige (golova)", "leagueAvg")}
+        {num("Prednost domaćeg terena", "homeAdvantage", 0.01)}
+        {num("Udio golova u 1. poluvremenu", "firstHalfShare", 0.01, "obično 0.44 – 0.47")}
+        {num("Dixon-Coles ρ", "rho", 0.01)}
+        {num("Prag sigurnosti (%)", "minConfidence", 1, "ispod praga preporuka je sigurnija linija")}
+      </div>
+
+      <div className="mt-4 rounded-xl border border-border/60 bg-background/50 p-4 text-sm">
+        <div className="grid gap-2 grid-cols-3 tabular-nums">
+          {r.combos.map((c) => (
+            <div key={c.combo}>
+              HT/FT {c.combo}: <span className="font-mono text-primary">{c.p}%</span>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 grid gap-2 sm:grid-cols-3 tabular-nums text-xs text-muted-foreground">
+          <div>Konačno 1: {r.p1}%</div>
+          <div>Konačno X: {r.pX}%</div>
+          <div>Konačno 2: {r.p2}%</div>
+        </div>
+        <div className="mt-2 text-xs text-muted-foreground">
+          Najvjerojatniji rezultati: {r.scores.map((s) => `${s.score} (${s.p}%)`).join(" · ")}
+        </div>
+        <div className="mt-3 text-sm">
+          Preporuka: <strong className="text-primary">HT/FT {r.topCombo}</strong> ({r.confidence}%)
+          {r.skip ? " — ispod praga, bolje sigurnija linija." : ""}
+        </div>
+      </div>
+      <button
+        onClick={() => {
+          setP(DEFAULT_HTFT);
+          saveHtFt(DEFAULT_HTFT);
+          toast.success("HT/FT stručnjak vraćen na zadano.");
+        }}
+        className="mt-3 rounded-lg border border-input px-3 py-1.5 text-xs hover:bg-muted"
+      >
+        Vrati zadano
+      </button>
+    </section>
   );
 }
 

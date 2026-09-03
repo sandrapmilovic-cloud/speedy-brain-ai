@@ -240,16 +240,20 @@ Ulazi: domaćin zabija ${p.homeFor} / prima ${p.homeAgainst}; gost zabija ${p.aw
 Izračun (dvije neovisne Poissonove matrice po poluvremenu, 0–6, s DC korekcijom): λ_dom=${r.lambdaHome} (1.PV ${r.lambdaHome1H}), λ_gost=${r.lambdaAway} (1.PV ${r.lambdaAway1H}).
 SVIH 9 HT/FT KOMBINACIJA: ${table}
 Poluvrijeme: 1=${r.ht1}% · X=${r.htX}% · 2=${r.ht2}%. Konačni ishod: 1=${r.p1}% · X=${r.pX}% · 2=${r.p2}%.
+Dvostruka šansa: 1X=${r.p1X}% · 12=${r.p12}% · X2=${r.pX2}%. Golovi: GG=${r.btts}% / NG=${Math.round((100 - r.btts) * 10) / 10}% · Over 2.5=${r.over25}% / Under 2.5=${r.under25}%.
 Najvjerojatniji točni rezultati: ${sc}
-Preporuka stručnjaka: HT/FT ${r.topCombo} sa sigurnošću ${r.confidence}%.${
+Preporuka stručnjaka: HT/FT ${r.topCombo} sa sigurnošću ${r.confidence}%. Kalibrirana pouzdanost 1X2 tipa: ${r.outcomeConfidence}%. Najsigurnija linija po modelu: ${r.safestPick} (${r.safestProb}%).${
     r.skip
-      ? ` UPOZORENJE: ispod korisnikovog praga (${p.minConfidence}%) — jasno reci da je HT/FT ovdje rizičan i ponudi sigurniju liniju (dvostruka šansa, 1X2 ili "domaćin ne gubi").`
+      ? ` UPOZORENJE: ispod korisnikovog praga (${p.minConfidence}%) — jasno reci da je HT/FT ovdje rizičan i preporuči gore navedenu najsigurniju liniju umjesto HT/FT-a.`
       : ""
   }
-PRAVILA VISOKE TOČNOSTI ZA ISHOD I REZULTAT:
-1) Za pitanje "tko pobjeđuje / kakav je ishod" uvijek daj 1X2 postotke koji se zbrajaju u 100% i tek onda tip.
-2) Za točan rezultat navedi 3 najvjerojatnija ishoda s postocima; nikad ne nudi samo jedan bez alternative.
-3) HT/FT preokreti (1/2, 2/1) rijetki su — nikad im ne pripisuj sigurnost veću od ${Math.max(15, Math.round(r.confidence / 2))}% osim ako matrica to pokaže.
-4) Provjeri konzistentnost: zbroj svih 9 kombinacija = 100%, 1X2 iz kombinacija mora se poklapati s 1X2 postocima (±1 pb).
-5) Ako u kontekstu postoje stvarni podaci (forma, xG, sastavi, kvote), prilagodi λ i izričito napiši koliko si ih pomaknuo i zašto — brojke gore su korisnikovi ručni ulazi.`;
+PRAVILA VISOKE TOČNOSTI ZA ISHOD I REZULTAT (obavezno):
+1) Nikad ne izmišljaj postotke — koristi ISKLJUČIVO brojke iz ovog bloka; ako ih mijenjaš zbog stvarnih podataka (forma, xG, ozljede, sastavi, kvote), napiši staru → novu vrijednost i razlog.
+2) Za pitanje o ishodu daj 1X2 postotke (zbroj 100%), zatim tip i kalibriranu pouzdanost ${r.outcomeConfidence}% — ne navodi veću sigurnost od toga.
+3) Za točan rezultat navedi 3 najvjerojatnija s postocima; jedan točan rezultat rijetko prelazi 12% pa to jasno reci.
+4) Za HT/FT prikaži svih 9 kombinacija poredanih silazno, pa tip. Preokretima (1/2, 2/1) ne pripisuj sigurnost veću od ${Math.max(10, Math.round(r.confidence / 2))}%.
+5) Uvijek dodaj i sigurniju alternativu (dvostruka šansa / GG-NG / Over-Under) s njezinim postotkom, uz kratko obrazloženje.
+6) Provjera konzistentnosti prije slanja odgovora: zbroj 9 kombinacija = 100%, 1X2 iz kombinacija = 1X2 postocima (±1 pb), 1X+2 = 100%, GG+NG = 100%. Ako ne štima, ponovi izračun i tek onda odgovori.
+7) Struktura odgovora: (a) kratka procjena, (b) tablica postotaka, (c) glavni tip + pouzdanost, (d) sigurnija alternativa, (e) rizici. Bez praznih fraza i bez obećanja dobitka.`;
 }
+

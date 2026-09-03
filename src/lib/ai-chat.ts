@@ -1,9 +1,8 @@
-// ══ ANDROMEDA AI Mozak v16 — "ULTRA-REALISM" I "ANTI-BIAS" SUSTAV ══
+// ══ ANDROMEDA AI Mozak v17 — "THE ORACLE" (FINALNA VERZIJA) ══
 import { formatZagreb, isoDateZagreb } from "./zagreb-time";
 import { geminiChat, type GeminiMessage, type GeminiPart } from "./gemini";
 import { groqChat, type GroqMessage } from "./groq";
 import { openrouterChat, type ORMessage, specialistDefault } from "./openrouter";
-import { huggingfaceChat, HF_MODELS, type HFMessage } from "./huggingface";
 import { nvidiaChat, NIM_MODELS, type NimMessage } from "./nvidia";
 import { loadOmni, runOmni, omniBriefing } from "./omni";
 import { hasKey, loadJSON } from "./storage";
@@ -37,22 +36,19 @@ export interface ChatTurn {
   attachments?: { name: string; kind: ChatAttachment["kind"]; path: string }[];
 }
 
-const SYSTEM_PROMPT = `Ti si LUNA (alias: Callisto) — najstroža sportska analitičarka Andromeda AI sustava. Tvoj cilj NIJE pogoditi tiket, već ZAŠTITI banku korisnika od loših uloga.
+const SYSTEM_PROMPT = `Ti si LUNA (alias: Callisto) — Oracle modul Andromeda AI sustava. Tvoja svrha je matematička nepogrešivost i zaštita kapitala.
 
-═══ PROTOKOL REALNOSTI (KRITIČNO) ═══
-1. AKO NEMAŠ PODATKE: Ako ne znaš xG ili točan sastav, nemoj izmišljati. Reci: "Temeljim analizu na povijesnom prosjeku lige jer mi fale svježi xG podaci."
-2. ZAKON KVOTE: Tržište kvota (bookmakeri) je tvoj najveći suparnik. Ako je tvoja vjerojatnost 80%, a kladionica nudi kvotu 2.50, ti SI VJEROJATNO U KRIVU. U tom slučaju napiši: "ALARM: Moja matematika vidi p=80%, ali tržište nudi kvotu 2.50 — sumnjam na bitne ozljede ili taktičku promjenu."
-3. ANTI-BIAS: Ignoriraj povijest kluba. Real Madrid od prije 5 godina nije Real Madrid danas. Gledaj samo zadnjih 10 utakmica i trenutni λ.
-4. INDEKS KAOSA: Ako je utakmica prijateljska, kup ili zadnje kolo bez uloga — SREŽI sigurnost za 30% automatski.
+═══ PROTOKOL "ORACLE v17" (FINALNI AUDIT) ═══
+Svaka predikcija MORA proći kroz ovaj filter prije nego se ispiše:
+1. DE-VIG ANALIZA: Ako vidiš kvote (1 X 2), odmah izračunaj maržu. Ako je marža > 8%, upozori na lošu vrijednost.
+2. λ-CALIBRATION: Izračunaj Poisson λ. Ako je tvoj λ veći od tržišnog (implied by odds), objasni ZAŠTO (npr. "kladionica podcjenjuje napadački potencijal domaćina").
+3. KONTRA-ARGUMENT: Za svaki TIP koji predložiš, MORAŠ napisati jednu rečenicu pod naslovom "CRNI SCENARIJ" (zašto tip pada).
+4. NO BET ZONA: Ako je tvoja sigurnost < 55% ili je Edge < 2%, tvoj savjet je obavezno "PRESKOČITI".
 
-═══ IDENTITET I STIL ═══
-- Odgovaraj ISKLJUČIVO na IZVORNOM HRVATSKOM jeziku.
-- Budi brutalno iskrena. Ako je utakmica "lutrija", napiši: "Ovo je kocka, ne predikcija."
-- Prva rečenica: **Tip: [Ishod]** · **Sigurnost: [X%]**.
-
-═══ MATEMATIČKI REVIZOR ═══
-- Poisson matrica 0-6 s Dixon-Coles korekcijom je tvoj temelj.
-- Svaki tip mora proći "Kontra-test": Koji je najjači argument PROTIV ovog tipa? Navedi ga.
+═══ IDENTITET I JEZIK ═══
+- Odgovaraj ISKLJUČIVO na HRVATSKOM jeziku.
+- Prva rečenica: **Tip: [KONKRETNO]** · **Sigurnost: [X%]** · **Value: [DA/NE]**.
+- Budi hladna, analitična i izbjegavaj navijački optimizam.
 `;
 
 async function buildFootballContext(userText: string): Promise<string> {
@@ -62,69 +58,102 @@ async function buildFootballContext(userText: string): Promise<string> {
   try {
     if (wantsLive) {
       const live = await getLiveFixtures();
-      parts.push(`UŽIVO (${live.length}):\n` + live.slice(0, 15).map(f => `- [${f.league.name}] ${f.teams.home.name} ${f.goals.home}:${f.goals.away} ${f.teams.away.name} (${f.fixture.status.short})`).join("\n"));
+      parts.push(`UŽIVO (${live.length}):\n` + live.slice(0, 15).map(f => {
+        // Pokušaj izvući kvote ako su ugniježđene (ovisno o API tieru)
+        const odds = (f as any).odds ? ` [Kvote: ${(f as any).odds}]` : "";
+        return `- [${f.league.name}] ${f.teams.home.name} ${f.goals.home}:${f.goals.away} ${f.teams.away.name} (${f.fixture.status.short})${odds}`;
+      }).join("\n"));
     } else if (wantsToday) {
       const list = await getFixturesByDate(isoDateZagreb());
-      parts.push(`DANAS (${list.length}):\n` + list.slice(0, 20).map(f => `- [${f.league.name}] ${f.teams.home.name} vs ${f.teams.away.name} (${new Date(f.fixture.date).toLocaleTimeString("hr-HR", {hour: "2-digit", minute:"2-digit", timeZone: "Europe/Zagreb"})})`).join("\n"));
+      parts.push(`DANASNJI RASPORED:\n` + list.slice(0, 20).map(f => `- [${f.league.name}] ${f.teams.home.name} vs ${f.teams.away.name} (${new Date(f.fixture.date).toLocaleTimeString("hr-HR", {hour: "2-digit", minute:"2-digit", timeZone: "Europe/Zagreb"})})`).join("\n"));
     }
-  } catch (e) { console.warn("API Context Error", e); }
+  } catch (e) { console.warn("Context Builder Error", e); }
   return parts.join("\n\n");
 }
 
-export async function askAi(userText: string, history: ChatTurn[], attachments: ChatAttachment[] = [], opts: { voice?: boolean } = {}): Promise<string> {
+export async function askAi(
+  userText: string, 
+  history: ChatTurn[], 
+  attachments: ChatAttachment[] = [], 
+  opts: { voice?: boolean } = {}
+): Promise<string> {
   const prefs = loadJSON<BrainPrefs>("tm.brain.prefs", { primary: "openrouter", prioritizeSpecialists: true });
   const market = detectMarket(userText);
   const modul = marketModule(market);
   
+  // Moduli
   const mm = loadMastermind();
   const mmOn = mastermindActive(mm, market);
   const quantum = loadQuantum();
   const quantumOn = quantumActive(quantum, market);
-
   const omni = mmOn ? boostOmni(mm, loadOmni()) : loadOmni();
   const anti = mmOn ? boostAntiError(mm, loadAntiError()) : loadAntiError();
   const titanPrefs = mmOn ? boostTitan(mm, loadTitan()) : loadTitan();
   const sniperPrefs = mmOn ? boostSniper(mm, loadSniper()) : loadSniper();
 
+  const turbo = !!prefs.turbo;
+  const deadline = turbo ? 20000 : 55000;
+
+  // Paralelno procesiranje motora
   const [omniRes, consensusRes] = await Promise.all([
-    (omni.enabled && (market === "btts" || market === "ou25")) ? runOmni(market as any, userText, "", { turbo: !!prefs.turbo }) : Promise.resolve(null),
-    (prefs.ensemble !== false && market !== "opce") ? runConsensus(market, userText, "", { turbo: !!prefs.turbo }) : Promise.resolve(null)
+    (omni.enabled && (market === "btts" || market === "ou25")) 
+      ? withDeadline(runOmni(market as any, userText, "", { turbo }), deadline) 
+      : Promise.resolve(null),
+    (prefs.ensemble !== false && market !== "opce") 
+      ? withDeadline(runConsensus(market, userText, "", { turbo }), deadline) 
+      : Promise.resolve(null)
   ]);
 
-  const auditBlock = `
-═══ REVIZIJA ISTINE (Audit) ═══
-- λ (Dom/Gost): [X.XX / X.XX]
-- Moja P vs Market P: [XX% / XX%]
-- Detektiran Edge: [X.X%]
-- Glavni rizik (PROTIV): [Navedi zašto bi tip mogao pasti]
-- Presuda: [PROLAZI / RIZIČNO / ZAMKA]
+  const auditDirective = `
+═══ REVIZIJSKI PANEL (Oracle v17) ═══
+- λ_model (Total): [X.XX]
+- Implied P (Market): [XX%]
+- My P (Andromeda): [XX%]
+- Edge / Value: [X.X%] / [DA/NE]
+- CRNI SCENARIJ: [Zašto ovaj tip pada?]
+- KONAČNA PRESUDA: [IGRAJ / PRESKOČI]
 `;
 
+  const directives = 
+    superPromptDirectives(loadSuper(), market) + 
+    htFtDirectives(loadHtFt(), market) +
+    sniperDirectives(sniperPrefs, market) +
+    titanDirectives(titanPrefs, market) +
+    quantumDirectives(quantum, market);
+
   const sys = SYSTEM_PROMPT + 
-    `\n\nTRAŽENO TRŽIŠTE: ${MARKET_LABEL[market]}.` +
-    `\n\nUpute: ${superPromptDirectives(loadSuper(), market)} ${htFtDirectives(loadHtFt(), market)}` +
-    `\n\n${modul} ${omniBriefing(omniRes)} ${consensusBriefing(consensusRes)}` +
-    `\n\n${auditBlock}`;
+    `\n\nTRŽIŠTE: ${MARKET_LABEL[market]}. \n\n${directives}\n\n${modul}` +
+    `\n\nBRIEFING MOTORA: ${omniBriefing(omniRes)} ${consensusBriefing(consensusRes)}` +
+    `\n\n${auditDirective}`;
 
-  const now = `Vrijeme: ${formatZagreb()}.`;
   const ctx = await buildFootballContext(userText);
-  const finalSys = sys + "\n\nKONTEKST:\n" + now + "\n" + ctx + attachmentsContextText(attachments);
+  const finalSys = sys + "\n\nKONTEKST:\n" + ctx + "\n" + attachmentsContextText(attachments);
 
-  // Redoslijed mozgova
-  const brains: Array<"openrouter" | "nvidia" | "gemini" | "groq"> = [prefs.primary as any, "openrouter", "nvidia", "gemini", "groq"].filter(Boolean) as any;
-  
+  const brains: Array<"openrouter" | "nvidia" | "gemini" | "groq"> = [
+    prefs.primary as any, "openrouter", "nvidia", "gemini", "groq"
+  ].filter((b, i, self) => b && self.indexOf(b) === i) as any;
+
   for (const b of brains) {
     try {
       if (b === "openrouter" && hasKey("openrouter")) return await runOpenRouter(finalSys, history, userText, attachments, prefs, market);
       if (b === "nvidia" && hasKey("nvidia")) return await runNim(finalSys, history, userText, prefs);
       if (b === "gemini" && hasKey("gemini")) return await runGemini(finalSys, history, userText, attachments);
       if (b === "groq" && hasKey("groq")) return await runGroq(finalSys, history, userText, attachments);
-    } catch (e) { console.error(`Brain ${b} failed`, e); }
+    } catch (e) { console.warn(`Mozak ${b} nije uspio, pokušavam sljedeći...`); }
   }
-  throw new Error("Nijedan mozak nije odgovorio. Provjeri ključeve.");
+
+  throw new Error("Svi AI mozgovi su trenutno nedostupni. Provjeri API ključeve u Postavkama.");
 }
 
-// Pomoćne funkcije za chat
+async function withDeadline<T>(p: Promise<T>, ms: number): Promise<T | null> {
+  let t: any;
+  const timeout = new Promise<null>((res) => { t = setTimeout(() => res(null), ms); });
+  const result = await Promise.race([p, timeout]);
+  clearTimeout(t);
+  return result;
+}
+
+// POMOĆNE FUNKCIJE ZA API POZIVE
 async function runOpenRouter(sys: string, history: ChatTurn[], userText: string, attachments: ChatAttachment[], prefs: any, market: any) {
   const spec = specialistsForMarket(market);
   const model = spec.length ? spec[0].id : prefs.orModel || specialistDefault();

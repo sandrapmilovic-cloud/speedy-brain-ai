@@ -1,30 +1,17 @@
-// ══ ANDROMEDA AI Mozak v17.2 — "ORACLE" (ISPRAVLJENI PAYLOAD) ══
+// ══ ANDROMEDA AI Mozak v17.3 — "SLIM & REBORN" ══
 import { formatZagreb, isoDateZagreb } from "./zagreb-time";
 import { geminiChat, type GeminiMessage, type GeminiPart } from "./gemini";
 import { groqChat, type GroqMessage } from "./groq";
 import { openrouterChat, type ORMessage, specialistDefault } from "./openrouter";
 import { nvidiaChat, NIM_MODELS, type NimMessage } from "./nvidia";
 import { loadOmni, runOmni, omniBriefing } from "./omni";
-import { hasKey, loadJSON } from "./storage";
+import { hasKey, getKey, loadJSON } from "./storage";
 import { detectMarket, marketModule, specialistsForMarket, MARKET_LABEL } from "./specialists";
 import { runConsensus, consensusBriefing } from "./consensus";
 import { loadSuper, superPromptDirectives } from "./superaccuracy";
-import { loadAntiError, antiErrorDirectives, antiErrorActive } from "./antierror";
-import { loadSniper, sniperDirectives } from "./sniper";
-import { loadQuantum, quantumActive, quantumDirectives } from "./quantum";
-import { loadGoalFormula, goalFormulaDirectives } from "./goalformula";
 import { loadHtFt, htFtDirectives } from "./htft";
+import { loadSniper, sniperDirectives } from "./sniper";
 import { loadTitan, titanDirectives } from "./titan";
-import {
-  loadMastermind,
-  mastermindActive,
-  mastermindDirectives,
-  boostOmni,
-  boostAntiError,
-  boostTitan,
-  boostSniper,
-  boostSuper,
-} from "./mastermind";
 import { getFixturesByDate, getLiveFixtures, ApiFootballError } from "./api-football";
 import type { ChatAttachment } from "./attachments";
 import { attachmentsContextText } from "./attachments";
@@ -33,22 +20,11 @@ export interface ChatTurn {
   role: "user" | "assistant";
   content: string;
   ts: number;
-  attachments?: { name: string; kind: ChatAttachment["kind"]; path: string }[];
 }
 
-const SYSTEM_PROMPT = `Ti si LUNA (alias: Callisto) — Oracle modul Andromeda AI sustava. Tvoja svrha je matematička nepogrešivost i zaštita kapitala.
-
-═══ PROTOKOL "ORACLE v17" (FINALNI AUDIT) ═══
-1. DE-VIG ANALIZA: Ako vidiš kvote (1 X 2), odmah izračunaj maržu. Ako je marža > 8%, upozori na lošu vrijednost.
-2. λ-CALIBRATION: Izračunaj Poisson λ. Ako je tvoj λ veći od tržišnog (implied by odds), objasni ZAŠTO.
-3. KONTRA-ARGUMENT: Obavezan "CRNI SCENARIJ" (zašto tip pada).
-4. NO BET ZONA: Ako je tvoja sigurnost < 55% ili je Edge < 2%, tvoj savjet je obavezno "PRESKOČITI".
-
-═══ IDENTITET I JEZIK ═══
-- Odgovaraj ISKLJUČIVO na HRVATSKOM jeziku.
-- Prva rečenica: **Tip: [KONKRETNO]** · **Sigurnost: [X%]** · **Value: [DA/NE]**.
-- Budi hladna, analitična i izbjegavaj navijački optimizam.
-`;
+// SKRAĆENI SISTEMSKI PROMPT (da izbjegnemo Groq 413 grešku)
+const SYSTEM_PROMPT = `Ti si LUNA (Andromeda AI Oracle). Odgovaraj ISKLJUČIVO na hrvatskom jeziku.
+Pravila: (1) Prva rečenica: TIP + SIGURNOST + VALUE. (2) Obavezan "CRNI SCENARIJ" na kraju. (3) Koristi Poisson λ analizu. (4) Budi hladna i analitična.`;
 
 async function buildFootballContext(userText: string): Promise<string> {
   const wantsToday = /danas|današnj|today/i.test(userText);
@@ -57,137 +33,63 @@ async function buildFootballContext(userText: string): Promise<string> {
   try {
     if (wantsLive) {
       const live = await getLiveFixtures();
-      parts.push(`UŽIVO (${live.length}):\n` + live.slice(0, 15).map(f => {
-        const odds = (f as any).odds ? ` [Kvote: ${(f as any).odds}]` : "";
-        return `- [${f.league.name}] ${f.teams.home.name} ${f.goals.home}:${f.goals.away} ${f.teams.away.name} (${f.fixture.status.short})${odds}`;
-      }).join("\n"));
+      // Smanjeno na 8 utakmica da uštedimo tokene
+      parts.push(`UŽIVO:\n` + live.slice(0, 8).map(f => `- ${f.teams.home.name} ${f.goals.home}:${f.goals.away} ${f.teams.away.name}`).join("\n"));
     } else if (wantsToday) {
       const list = await getFixturesByDate(isoDateZagreb());
-      parts.push(`DANASNJI RASPORED:\n` + list.slice(0, 20).map(f => `- [${f.league.name}] ${f.teams.home.name} vs ${f.teams.away.name} (${new Date(f.fixture.date).toLocaleTimeString("hr-HR", {hour: "2-digit", minute:"2-digit", timeZone: "Europe/Zagreb"})})`).join("\n"));
+      parts.push(`DANAS:\n` + list.slice(0, 12).map(f => `- ${f.teams.home.name} vs ${f.teams.away.name}`).join("\n"));
     }
-  } catch (e) { console.warn("Context Builder Error", e); }
-  return parts.join("\n\n");
+  } catch (e) { console.warn("Context Error", e); }
+  return parts.join("\n");
 }
 
-/** Čisti povijest razgovora od metapodataka prije slanja na API */
-function cleanHistory(history: ChatTurn[]) {
-  return history.map(h => ({
-    role: h.role,
-    content: h.content
-  }));
-}
-
-export async function askAi(
-  userText: string, 
-  history: ChatTurn[], 
-  attachments: ChatAttachment[] = [], 
-  opts: { voice?: boolean } = {}
-): Promise<string> {
-  const prefs = loadJSON<BrainPrefs>("tm.brain.prefs", { primary: "openrouter", prioritizeSpecialists: true });
+export async function askAi(userText: string, history: ChatTurn[], attachments: ChatAttachment[] = []): Promise<string> {
+  const prefs = loadJSON<any>("tm.brain.prefs", { primary: "openrouter" });
   const market = detectMarket(userText);
-  const modul = marketModule(market);
   
-  const mm = loadMastermind();
-  const mmOn = mastermindActive(mm, market);
-  const quantum = loadQuantum();
-  const quantumOn = quantumActive(quantum, market);
-  const omni = mmOn ? boostOmni(mm, loadOmni()) : loadOmni();
-  const anti = mmOn ? boostAntiError(mm, loadAntiError()) : loadAntiError();
-  const titanPrefs = mmOn ? boostTitan(mm, loadTitan()) : loadTitan();
-  const sniperPrefs = mmOn ? boostSniper(mm, loadSniper()) : loadSniper();
+  // Smanjujemo povijest na zadnje 3 poruke da ne probijemo limit tokena
+  const slimHistory = history.slice(-3).map(h => ({ role: h.role, content: h.content }));
 
-  const turbo = !!prefs.turbo;
-  const deadline = turbo ? 22000 : 60000;
+  // Upute iz modula - šaljemo samo osnovne da uštedimo prostor
+  const directives = htFtDirectives(loadHtFt(), market) + sniperDirectives(loadSniper(), market);
 
-  const soft = <T,>(p: Promise<T>) =>
-    withDeadline(p, deadline).catch((e) => {
-      console.warn("Pomoćni motor preskočen:", e);
-      return null;
-    });
+  const auditBlock = `\n═══ REVIZIJA ═══\n- λ model: [X.X]\n- My P vs Market P: [X% / X%]\n- CRNI SCENARIJ: [Zašto pada?]\n- PRESUDA: [IGRAJ/PRESKOČI]`;
 
-  const [omniRes, consensusRes] = await Promise.all([
-    (omni.enabled && (market === "btts" || market === "ou25"))
-      ? soft(runOmni(market as any, userText, "", { turbo }))
-      : Promise.resolve(null),
-    (prefs.ensemble !== false && market !== "opce")
-      ? soft(runConsensus(market, userText, "", { turbo }))
-      : Promise.resolve(null)
-  ]);
-
-  const auditDirective = `
-═══ REVIZIJSKI PANEL (Oracle v17) ═══
-- λ_model (Total): [X.XX]
-- Implied P (Market): [XX%]
-- My P (Andromeda): [XX%]
-- Edge / Value: [X.X%] / [DA/NE]
-- CRNI SCENARIJ: [Zašto ovaj tip pada?]
-- KONAČNA PRESUDA: [IGRAJ / PRESKOČI]
-`;
-
-  const directives = 
-    superPromptDirectives(loadSuper(), market) + 
-    htFtDirectives(loadHtFt(), market) +
-    sniperDirectives(sniperPrefs, market) +
-    titanDirectives(titanPrefs, market) +
-    quantumDirectives(quantum, market);
-
-  const sys = SYSTEM_PROMPT + 
-    `\n\nTRŽIŠTE: ${MARKET_LABEL[market]}. \n\n${directives}\n\n${modul}` +
-    `\n\nBRIEFING MOTORA: ${omniBriefing(omniRes)} ${consensusBriefing(consensusRes)}` +
-    `\n\n${auditDirective}`;
-
+  const sys = SYSTEM_PROMPT + `\n\nTRŽIŠTE: ${MARKET_LABEL[market]}\n${directives}\n${auditBlock}`;
   const ctx = await buildFootballContext(userText);
   const finalSys = sys + "\n\nKONTEKST:\n" + ctx + "\n" + attachmentsContextText(attachments);
 
-  const brains: Array<"openrouter" | "nvidia" | "gemini" | "groq"> = [
-    prefs.primary as any, "openrouter", "nvidia", "gemini", "groq"
-  ].filter((b, i, self) => b && self.indexOf(b) === i) as any;
-
+  const brains: any[] = [prefs.primary, "openrouter", "gemini", "groq"].filter(Boolean);
   const errors: string[] = [];
 
   for (const b of brains) {
     try {
-      if (b === "openrouter" && hasKey("openrouter")) return await runOpenRouter(finalSys, history, userText, attachments, prefs, market);
-      if (b === "nvidia" && hasKey("nvidia")) return await runNim(finalSys, history, userText, prefs);
-      if (b === "gemini" && hasKey("gemini")) return await runGemini(finalSys, history, userText, attachments);
-      if (b === "groq" && hasKey("groq")) return await runGroq(finalSys, history, userText, attachments);
-    } catch (e) { 
-      const msg = e instanceof Error ? e.message : String(e);
-      console.warn(`Mozak ${b} nije uspio:`, msg);
-      errors.push(`${b}: ${msg}`);
+      if (b === "openrouter" && hasKey("openrouter")) {
+        // Prisiljavamo OpenRouter na BESPLATNI model ako korisnik nije postavio svoj
+        const model = prefs.orModel || "google/gemini-2.0-flash-exp:free";
+        return await openrouterChat(model, [{ role: "system", content: finalSys }, ...slimHistory, { role: "user", content: userText }], {});
+      }
+      if (b === "nvidia" && hasKey("nvidia")) {
+        // KORISTIMO NOVI NVIDIA MODEL (Llama 3.1 70B je stabilan)
+        return await nvidiaChat("meta/llama-3.1-70b-instruct", [{ role: "system", content: finalSys }, ...slimHistory, { role: "user", content: userText }]);
+      }
+      if (b === "gemini" && hasKey("gemini")) {
+        return await runGemini(finalSys, history, userText, attachments);
+      }
+      if (b === "groq" && hasKey("groq")) {
+        // Groq koristimo samo s Llama 3.3 70B modelom
+        return await groqChat([{ role: "system", content: finalSys }, ...slimHistory.map(h => ({ role: h.role === "user" ? "user" : "assistant", content: h.content })), { role: "user", content: userText }]);
+      }
+    } catch (e: any) {
+      errors.push(`${b}: ${e.message}`);
     }
   }
 
-  throw new Error(`Svi AI mozgovi su nedostupni. Provjeri ključeve u Postavkama. Greške: ${errors.join(" | ")}`);
+  throw new Error(`Greška: ${errors.join(" | ")}`);
 }
 
-async function withDeadline<T>(p: Promise<T>, ms: number): Promise<T | null> {
-  let t: any;
-  const timeout = new Promise<null>((res) => { t = setTimeout(() => res(null), ms); });
-  const result = await Promise.race([p, timeout]);
-  clearTimeout(t);
-  return result;
-}
-
-// POMOĆNE FUNKCIJE ZA API POZIVE (ISPRAVLJENO ČIŠĆENJE)
-
-async function runOpenRouter(sys: string, history: ChatTurn[], userText: string, attachments: ChatAttachment[], prefs: any, market: any) {
-  const spec = specialistsForMarket(market);
-  const model = spec.length ? spec[0].id : prefs.orModel || specialistDefault();
-  const backups = spec.slice(1,4).map(s => s.id);
-  const msgs: ORMessage[] = [
-    { role: "system", content: sys },
-    ...cleanHistory(history),
-    { role: "user", content: userText }
-  ];
-  return openrouterChat(model, msgs, { extraFallbacks: backups });
-}
-
-async function runGemini(sys: string, history: ChatTurn[], userText: string, attachments: ChatAttachment[]) {
-  const gHist: GeminiMessage[] = history.map(t => ({ 
-    role: t.role === "user" ? "user" : "model", 
-    parts: [{ text: t.content }] 
-  }));
+async function runGemini(sys: string, history: any[], userText: string, attachments: any[]) {
+  const gHist: GeminiMessage[] = history.slice(-3).map(t => ({ role: t.role === "user" ? "user" : "model", parts: [{ text: t.content }] }));
   const userParts: GeminiPart[] = [{ text: userText || "(bez teksta)" }];
   for (const a of attachments) if (a.kind === "image" && a.dataUrl) {
     const m = /^data:([^;]+);base64,(.+)$/.exec(a.dataUrl);
@@ -195,36 +97,4 @@ async function runGemini(sys: string, history: ChatTurn[], userText: string, att
   }
   gHist.push({ role: "user", parts: userParts });
   return geminiChat(sys, gHist);
-}
-
-async function runGroq(sys: string, history: ChatTurn[], userText: string, attachments: ChatAttachment[]) {
-  const gr: GroqMessage[] = [
-    { role: "system", content: sys },
-    ...history.map((t): GroqMessage => ({ 
-      role: t.role === "user" ? "user" : "assistant", 
-      content: t.content 
-    })),
-    { role: "user", content: userText }
-  ];
-  return groqChat(gr);
-}
-
-async function runNim(sys: string, history: ChatTurn[], userText: string, prefs: any) {
-  const model = prefs.nimModel || NIM_MODELS[0].id;
-  const msgs: NimMessage[] = [
-    { role: "system", content: sys },
-    ...cleanHistory(history),
-    { role: "user", content: userText }
-  ];
-  return nvidiaChat(model, msgs);
-}
-
-interface BrainPrefs {
-  primary?: string;
-  orModel?: string;
-  prioritizeSpecialists?: boolean;
-  ensemble?: boolean;
-  turbo?: boolean;
-  hfModel?: string;
-  nimModel?: string;
 }

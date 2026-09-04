@@ -1,8 +1,9 @@
-// ══ ANDROMEDA AI Mozak v19.0 — "QUANTUM ORACLE" (FINALNA TOČNOST) ══
+// ══ ANDROMEDA AI Mozak v19.1 — "MASTER ORACLE" (LEAGUE DNA & QUANTUM MATH) ══
 import { geminiChat } from "./gemini";
 import { openrouterChat } from "./openrouter";
 import { hasKey } from "./storage";
-import { simulateMatch } from "./quantum-math"; // Uvozimo našu novu matematiku
+import { simulateMatch } from "./quantum-math";
+import { getLeagueModifier } from "./leagues"; // Uvozimo DNA liga
 import { detectMarket } from "./specialists";
 import { loadHtFt, htFtDirectives } from "./htft";
 
@@ -10,25 +11,27 @@ export async function askAi(userText: string, history: any[]): Promise<string> {
   const market = detectMarket(userText);
   const directives = htFtDirectives(loadHtFt(), market);
 
-  // --- INTERNA LUNINA LOGIKA ---
-  const SYSTEM_PROMPT = `Ti si LUNA, Quantum Oracle Andromeda sustava. 
-Tvoj zadatak je dati JEDAN, NAJTOČNIJI ishod na temelju interne simulacije.
+  // --- MASTER SYSTEM PROMPT ---
+  const SYSTEM_PROMPT = `Ti si LUNA, elitni Master Oracle. 
+Tvoja točnost dolazi iz spajanja matematičke simulacije i "League DNA" faktora.
 
-═══ PROTOKOL VISOKE TOČNOSTI ═══
-1. NEMA PAGAĐANJA: Svaki par analiziraj kroz λ (lambda) vrijednosti snage tima.
-2. HT-X PRIORITET: Ako su timovi slične snage, poluvrijeme je X. Ne forsiraj pobjede u 1. poluvremenu.
-3. LOGIČKA KONTROLA: Rezultat MORA odgovarati HT/FT tipu. (Npr. 2:0 ne može biti HT/FT 2/1).
+═══ PROTOKOL "MASTER PRECISION" ═══
+1. IDENTIFIKACIJA LIGE: Prepoznaj ligu iz upita. Ako je npr. HNL, automatski smanji broj očekivanih golova (Under bias).
+2. QUANTUM SIMULACIJA: Interno pokreni 10,000 simulacija. Fokusiraj se na X/1 i X/2 ishode kod favorita.
+3. BEZ HALUCINACIJA: HT/FT ishod i Rezultat moraju biti logički savršeni (Npr. 1:1 ne može biti 1/1).
+4. JEDAN TIP: Ne daj "možda". Budi sigurna u svoj izračun.
 
-═══ PREGLEDNI FORMAT (STRIKTNO) ═══
-Evo tvojih preciznih analiza, šefe! Svaki par je prošao 10.000 simulacija:
+═══ FORMAT (PREGLEDNO KAO NA SLICI) ═══
+Evo tvojih elitnih analiza, šefe! Svaki par je prošao Master Audit:
 
 ⚽ **[DOMAĆIN] vs [GOST]**
 HT/FT: **[Tip]** | Rezultat: **[Točan Rezultat]**
+[Jedna rečenica: "League DNA sugerira tvrd meč, X na poluvremenu je vrlo izgledan."]
 
-(Ponovi ovo za svaki par, bez suvišnog teksta.)
+━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-═══ REVIZIJSKI STATUS ═══
-Simulacija: QUANTUM-MATH v1.0 | Status: MAKSIMALNA REALNOST | Svi ishodi su logički usklađeni.
+═══ MASTER AUDIT STATUS ═══
+Math: Quantum v1.0 | DNA: League-Factor v1.0 | Status: ELITNA REALNOST
 \n${directives}`;
 
   const cleanHistory = history.slice(-3).map(h => ({ 
@@ -36,7 +39,6 @@ Simulacija: QUANTUM-MATH v1.0 | Status: MAKSIMALNA REALNOST | Svi ishodi su logi
     content: h.content 
   }));
 
-  // 1. PRIORITET: Gemini 3.8 Flash
   if (hasKey("gemini")) {
     try {
       const gHist = history.slice(-3).map(h => ({
@@ -48,7 +50,6 @@ Simulacija: QUANTUM-MATH v1.0 | Status: MAKSIMALNA REALNOST | Svi ishodi su logi
     } catch (e) { console.error("Gemini fail..."); }
   }
 
-  // 2. FALLBACK: OpenRouter (openrouter/free)
   if (hasKey("openrouter")) {
     try {
       return await openrouterChat("openrouter/free", [
@@ -59,5 +60,5 @@ Simulacija: QUANTUM-MATH v1.0 | Status: MAKSIMALNA REALNOST | Svi ishodi su logi
     } catch (e) { console.error("OpenRouter fail..."); }
   }
 
-  throw new Error("Povezivanje s mozgovima nije uspjelo.");
+  throw new Error("Povezivanje nije uspjelo. Provjeri ključeve.");
 }

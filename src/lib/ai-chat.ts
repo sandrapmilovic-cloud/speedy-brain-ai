@@ -1,4 +1,4 @@
-// ══ ANDROMEDA AI Mozak v17 — "THE ORACLE" (FINALNA VERZIJA) ══
+// ══ ANDROMEDA AI Mozak v17.2 — "ORACLE" (ISPRAVLJENI PAYLOAD) ══
 import { formatZagreb, isoDateZagreb } from "./zagreb-time";
 import { geminiChat, type GeminiMessage, type GeminiPart } from "./gemini";
 import { groqChat, type GroqMessage } from "./groq";
@@ -39,10 +39,9 @@ export interface ChatTurn {
 const SYSTEM_PROMPT = `Ti si LUNA (alias: Callisto) — Oracle modul Andromeda AI sustava. Tvoja svrha je matematička nepogrešivost i zaštita kapitala.
 
 ═══ PROTOKOL "ORACLE v17" (FINALNI AUDIT) ═══
-Svaka predikcija MORA proći kroz ovaj filter prije nego se ispiše:
 1. DE-VIG ANALIZA: Ako vidiš kvote (1 X 2), odmah izračunaj maržu. Ako je marža > 8%, upozori na lošu vrijednost.
-2. λ-CALIBRATION: Izračunaj Poisson λ. Ako je tvoj λ veći od tržišnog (implied by odds), objasni ZAŠTO (npr. "kladionica podcjenjuje napadački potencijal domaćina").
-3. KONTRA-ARGUMENT: Za svaki TIP koji predložiš, MORAŠ napisati jednu rečenicu pod naslovom "CRNI SCENARIJ" (zašto tip pada).
+2. λ-CALIBRATION: Izračunaj Poisson λ. Ako je tvoj λ veći od tržišnog (implied by odds), objasni ZAŠTO.
+3. KONTRA-ARGUMENT: Obavezan "CRNI SCENARIJ" (zašto tip pada).
 4. NO BET ZONA: Ako je tvoja sigurnost < 55% ili je Edge < 2%, tvoj savjet je obavezno "PRESKOČITI".
 
 ═══ IDENTITET I JEZIK ═══
@@ -59,7 +58,6 @@ async function buildFootballContext(userText: string): Promise<string> {
     if (wantsLive) {
       const live = await getLiveFixtures();
       parts.push(`UŽIVO (${live.length}):\n` + live.slice(0, 15).map(f => {
-        // Pokušaj izvući kvote ako su ugniježđene (ovisno o API tieru)
         const odds = (f as any).odds ? ` [Kvote: ${(f as any).odds}]` : "";
         return `- [${f.league.name}] ${f.teams.home.name} ${f.goals.home}:${f.goals.away} ${f.teams.away.name} (${f.fixture.status.short})${odds}`;
       }).join("\n"));
@@ -69,6 +67,14 @@ async function buildFootballContext(userText: string): Promise<string> {
     }
   } catch (e) { console.warn("Context Builder Error", e); }
   return parts.join("\n\n");
+}
+
+/** Čisti povijest razgovora od metapodataka prije slanja na API */
+function cleanHistory(history: ChatTurn[]) {
+  return history.map(h => ({
+    role: h.role,
+    content: h.content
+  }));
 }
 
 export async function askAi(
@@ -81,7 +87,6 @@ export async function askAi(
   const market = detectMarket(userText);
   const modul = marketModule(market);
   
-  // Moduli
   const mm = loadMastermind();
   const mmOn = mastermindActive(mm, market);
   const quantum = loadQuantum();
@@ -92,10 +97,8 @@ export async function askAi(
   const sniperPrefs = mmOn ? boostSniper(mm, loadSniper()) : loadSniper();
 
   const turbo = !!prefs.turbo;
-  const deadline = turbo ? 20000 : 55000;
+  const deadline = turbo ? 22000 : 60000;
 
-  // Paralelno procesiranje motora
-  // Pomoćni motori nikad ne smiju srušiti odgovor — ako padnu, idemo bez briefinga.
   const soft = <T,>(p: Promise<T>) =>
     withDeadline(p, deadline).catch((e) => {
       console.warn("Pomoćni motor preskočen:", e);
@@ -140,16 +143,22 @@ export async function askAi(
     prefs.primary as any, "openrouter", "nvidia", "gemini", "groq"
   ].filter((b, i, self) => b && self.indexOf(b) === i) as any;
 
+  const errors: string[] = [];
+
   for (const b of brains) {
     try {
       if (b === "openrouter" && hasKey("openrouter")) return await runOpenRouter(finalSys, history, userText, attachments, prefs, market);
       if (b === "nvidia" && hasKey("nvidia")) return await runNim(finalSys, history, userText, prefs);
       if (b === "gemini" && hasKey("gemini")) return await runGemini(finalSys, history, userText, attachments);
       if (b === "groq" && hasKey("groq")) return await runGroq(finalSys, history, userText, attachments);
-    } catch (e) { console.warn(`Mozak ${b} nije uspio, pokušavam sljedeći...`); }
+    } catch (e) { 
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn(`Mozak ${b} nije uspio:`, msg);
+      errors.push(`${b}: ${msg}`);
+    }
   }
 
-  throw new Error("Svi AI mozgovi su trenutno nedostupni. Provjeri API ključeve u Postavkama.");
+  throw new Error(`Svi AI mozgovi su nedostupni. Provjeri ključeve u Postavkama. Greške: ${errors.join(" | ")}`);
 }
 
 async function withDeadline<T>(p: Promise<T>, ms: number): Promise<T | null> {
@@ -160,16 +169,25 @@ async function withDeadline<T>(p: Promise<T>, ms: number): Promise<T | null> {
   return result;
 }
 
-// POMOĆNE FUNKCIJE ZA API POZIVE
+// POMOĆNE FUNKCIJE ZA API POZIVE (ISPRAVLJENO ČIŠĆENJE)
+
 async function runOpenRouter(sys: string, history: ChatTurn[], userText: string, attachments: ChatAttachment[], prefs: any, market: any) {
   const spec = specialistsForMarket(market);
   const model = spec.length ? spec[0].id : prefs.orModel || specialistDefault();
-  const msgs: ORMessage[] = [{ role: "system", content: sys }, ...history, { role: "user", content: userText }];
-  return openrouterChat(model, msgs, { extraFallbacks: spec.slice(1,4).map(s => s.id) });
+  const backups = spec.slice(1,4).map(s => s.id);
+  const msgs: ORMessage[] = [
+    { role: "system", content: sys },
+    ...cleanHistory(history),
+    { role: "user", content: userText }
+  ];
+  return openrouterChat(model, msgs, { extraFallbacks: backups });
 }
 
 async function runGemini(sys: string, history: ChatTurn[], userText: string, attachments: ChatAttachment[]) {
-  const gHist: GeminiMessage[] = history.map(t => ({ role: t.role === "user" ? "user" : "model", parts: [{ text: t.content }] }));
+  const gHist: GeminiMessage[] = history.map(t => ({ 
+    role: t.role === "user" ? "user" : "model", 
+    parts: [{ text: t.content }] 
+  }));
   const userParts: GeminiPart[] = [{ text: userText || "(bez teksta)" }];
   for (const a of attachments) if (a.kind === "image" && a.dataUrl) {
     const m = /^data:([^;]+);base64,(.+)$/.exec(a.dataUrl);
@@ -180,13 +198,24 @@ async function runGemini(sys: string, history: ChatTurn[], userText: string, att
 }
 
 async function runGroq(sys: string, history: ChatTurn[], userText: string, attachments: ChatAttachment[]) {
-  const gr: GroqMessage[] = [{ role: "system", content: sys }, ...history.map((t): GroqMessage => ({ role: t.role === "user" ? "user" : "assistant", content: t.content })), { role: "user", content: userText }];
+  const gr: GroqMessage[] = [
+    { role: "system", content: sys },
+    ...history.map((t): GroqMessage => ({ 
+      role: t.role === "user" ? "user" : "assistant", 
+      content: t.content 
+    })),
+    { role: "user", content: userText }
+  ];
   return groqChat(gr);
 }
 
 async function runNim(sys: string, history: ChatTurn[], userText: string, prefs: any) {
   const model = prefs.nimModel || NIM_MODELS[0].id;
-  const msgs: NimMessage[] = [{ role: "system", content: sys }, ...history, { role: "user", content: userText }];
+  const msgs: NimMessage[] = [
+    { role: "system", content: sys },
+    ...cleanHistory(history),
+    { role: "user", content: userText }
+  ];
   return nvidiaChat(model, msgs);
 }
 

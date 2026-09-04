@@ -4,6 +4,10 @@
 // kalibriraju vlastitom Dixon-Coles/bivariate matricom, spajaju s de-vig
 // kvotom u logit prostoru i provjeravaju Monte Carlom.
 import { openrouterChat, type ORMessage } from "./openrouter";
+import { nvidiaChat, NIM_GOAL_MODELS, NIM_MODELS } from "./nvidia";
+import { groqChat, type GroqMessage } from "./groq";
+import { geminiChat } from "./gemini";
+import { hasKey } from "./storage";
 import { ensembleForMarket, MARKET_LABEL, type Market } from "./specialists";
 import {
   loadAccuracy, scoreMatrix, marketProbs, probForMarket, robustMean, median,

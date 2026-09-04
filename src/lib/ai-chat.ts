@@ -173,7 +173,7 @@ async function runGemini(sys: string, history: ChatTurn[], userText: string, att
 }
 
 async function runGroq(sys: string, history: ChatTurn[], userText: string, attachments: ChatAttachment[]) {
-  const gr: GroqMessage[] = [{ role: "system", content: sys }, ...history.map(t => ({ role: t.role === "user" ? "user" : "assistant", content: t.content })), { role: "user", content: userText }];
+  const gr: GroqMessage[] = [{ role: "system", content: sys }, ...history.map((t): GroqMessage => ({ role: t.role === "user" ? "user" : "assistant", content: t.content })), { role: "user", content: userText }];
   return groqChat(gr);
 }
 

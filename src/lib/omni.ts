@@ -440,7 +440,8 @@ export async function runOmni(
 }
 
 /** Blok koji ide u sistemski prompt chat bota kad je OMNI aktivan. */
-export function omniBriefing(o: OmniResult): string {
+export function omniBriefing(o: OmniResult | null): string {
+  if (!o) return "";
   const pct = (x: number) => `${(x * 100).toFixed(1)}%`;
   const p = o.prefs;
   const k = o.verdict.edge !== null && o.verdict.edge > 0 ? kelly(o.verdict.p, 1 / o.verdict.p + 0.01, p.kellyFraction) : null;

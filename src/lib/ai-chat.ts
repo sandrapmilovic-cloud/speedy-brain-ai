@@ -1,100 +1,100 @@
-// ══ ANDROMEDA AI Mozak v17.3 — "SLIM & REBORN" ══
+// ══ ANDROMEDA AI Mozak v17.4 — "FIXED MODELS & FREE TIER" ══
 import { formatZagreb, isoDateZagreb } from "./zagreb-time";
 import { geminiChat, type GeminiMessage, type GeminiPart } from "./gemini";
 import { groqChat, type GroqMessage } from "./groq";
-import { openrouterChat, type ORMessage, specialistDefault } from "./openrouter";
-import { nvidiaChat, NIM_MODELS, type NimMessage } from "./nvidia";
-import { loadOmni, runOmni, omniBriefing } from "./omni";
-import { hasKey, getKey, loadJSON } from "./storage";
-import { detectMarket, marketModule, specialistsForMarket, MARKET_LABEL } from "./specialists";
-import { runConsensus, consensusBriefing } from "./consensus";
-import { loadSuper, superPromptDirectives } from "./superaccuracy";
+import { openrouterChat, type ORMessage } from "./openrouter";
+import { nvidiaChat } from "./nvidia";
+import { hasKey, loadJSON } from "./storage";
+import { detectMarket, MARKET_LABEL } from "./specialists";
 import { loadHtFt, htFtDirectives } from "./htft";
 import { loadSniper, sniperDirectives } from "./sniper";
-import { loadTitan, titanDirectives } from "./titan";
 import { getFixturesByDate, getLiveFixtures, ApiFootballError } from "./api-football";
-import type { ChatAttachment } from "./attachments";
 import { attachmentsContextText } from "./attachments";
 
 export interface ChatTurn {
   role: "user" | "assistant";
   content: string;
-  ts: number;
 }
 
-// SKRAĆENI SISTEMSKI PROMPT (da izbjegnemo Groq 413 grešku)
-const SYSTEM_PROMPT = `Ti si LUNA (Andromeda AI Oracle). Odgovaraj ISKLJUČIVO na hrvatskom jeziku.
-Pravila: (1) Prva rečenica: TIP + SIGURNOST + VALUE. (2) Obavezan "CRNI SCENARIJ" na kraju. (3) Koristi Poisson λ analizu. (4) Budi hladna i analitična.`;
+// ULTRA-KRATKI PROMPT (da Groq ne javlja 413 Error)
+const SYSTEM_PROMPT = `Ti si LUNA (Andromeda AI). Odgovaraj HRVATSKI. 
+Pravilo: Prvi red = TIP + SIGURNOST. Na kraju "CRNI SCENARIJ". Analiziraj matematički.`;
 
 async function buildFootballContext(userText: string): Promise<string> {
-  const wantsToday = /danas|današnj|today/i.test(userText);
   const wantsLive = /uživo|uzivo|live/i.test(userText);
-  const parts: string[] = [];
   try {
     if (wantsLive) {
       const live = await getLiveFixtures();
-      // Smanjeno na 8 utakmica da uštedimo tokene
-      parts.push(`UŽIVO:\n` + live.slice(0, 8).map(f => `- ${f.teams.home.name} ${f.goals.home}:${f.goals.away} ${f.teams.away.name}`).join("\n"));
-    } else if (wantsToday) {
-      const list = await getFixturesByDate(isoDateZagreb());
-      parts.push(`DANAS:\n` + list.slice(0, 12).map(f => `- ${f.teams.home.name} vs ${f.teams.away.name}`).join("\n"));
+      return `UŽIVO: ` + live.slice(0, 5).map(f => `${f.teams.home.name} ${f.goals.home}:${f.goals.away} ${f.teams.away.name}`).join(", ");
     }
-  } catch (e) { console.warn("Context Error", e); }
-  return parts.join("\n");
+    const list = await getFixturesByDate(isoDateZagreb());
+    return `DANAS: ` + list.slice(0, 8).map(f => `${f.teams.home.name}-${f.teams.away.name}`).join(", ");
+  } catch { return ""; }
 }
 
-export async function askAi(userText: string, history: ChatTurn[], attachments: ChatAttachment[] = []): Promise<string> {
-  const prefs = loadJSON<any>("tm.brain.prefs", { primary: "openrouter" });
+export async function askAi(userText: string, history: ChatTurn[]): Promise<string> {
   const market = detectMarket(userText);
-  
-  // Smanjujemo povijest na zadnje 3 poruke da ne probijemo limit tokena
-  const slimHistory = history.slice(-3).map(h => ({ role: h.role, content: h.content }));
-
-  // Upute iz modula - šaljemo samo osnovne da uštedimo prostor
-  const directives = htFtDirectives(loadHtFt(), market) + sniperDirectives(loadSniper(), market);
-
-  const auditBlock = `\n═══ REVIZIJA ═══\n- λ model: [X.X]\n- My P vs Market P: [X% / X%]\n- CRNI SCENARIJ: [Zašto pada?]\n- PRESUDA: [IGRAJ/PRESKOČI]`;
-
-  const sys = SYSTEM_PROMPT + `\n\nTRŽIŠTE: ${MARKET_LABEL[market]}\n${directives}\n${auditBlock}`;
   const ctx = await buildFootballContext(userText);
-  const finalSys = sys + "\n\nKONTEKST:\n" + ctx + "\n" + attachmentsContextText(attachments);
+  
+  // Šaljemo samo zadnje 2 poruke da uštedimo prostor (vrijednost tokena)
+  const slimHistory = history.slice(-2).map(h => ({ role: h.role, content: h.content }));
 
-  const brains: any[] = [prefs.primary, "openrouter", "gemini", "groq"].filter(Boolean);
+  const directives = htFtDirectives(loadHtFt(), market) + sniperDirectives(loadSniper(), market);
+  const finalSys = `${SYSTEM_PROMPT}\nTRŽIŠTE: ${MARKET_LABEL[market]}\n${directives}\nKONTEKST: ${ctx}`;
+
   const errors: string[] = [];
 
-  for (const b of brains) {
+  // 1. POKUŠAJ: OPENROUTER (Samo besplatni modeli)
+  if (hasKey("openrouter")) {
     try {
-      if (b === "openrouter" && hasKey("openrouter")) {
-        // Prisiljavamo OpenRouter na BESPLATNI model ako korisnik nije postavio svoj
-        const model = prefs.orModel || "google/gemini-2.0-flash-exp:free";
-        return await openrouterChat(model, [{ role: "system", content: finalSys }, ...slimHistory, { role: "user", content: userText }], {});
-      }
-      if (b === "nvidia" && hasKey("nvidia")) {
-        // KORISTIMO NOVI NVIDIA MODEL (Llama 3.1 70B je stabilan)
-        return await nvidiaChat("meta/llama-3.1-70b-instruct", [{ role: "system", content: finalSys }, ...slimHistory, { role: "user", content: userText }]);
-      }
-      if (b === "gemini" && hasKey("gemini")) {
-        return await runGemini(finalSys, history, userText, attachments);
-      }
-      if (b === "groq" && hasKey("groq")) {
-        // Groq koristimo samo s Llama 3.3 70B modelom
-        return await groqChat([{ role: "system", content: finalSys }, ...slimHistory.map(h => ({ role: h.role === "user" ? "user" : "assistant", content: h.content })), { role: "user", content: userText }]);
-      }
-    } catch (e: any) {
-      errors.push(`${b}: ${e.message}`);
-    }
+      // Ovdje koristimo isključivo :free modele da izbjegnemo 402 error
+      const freeModels = [
+        "google/gemini-2.0-flash-exp:free",
+        "meta-llama/llama-3.1-8b-instruct:free",
+        "mistralai/mistral-7b-instruct:free"
+      ];
+      return await openrouterChat(freeModels[0], [
+        { role: "system", content: finalSys },
+        ...slimHistory,
+        { role: "user", content: userText }
+      ], { extraFallbacks: freeModels.slice(1) });
+    } catch (e: any) { errors.push(`OpenRouter: ${e.message}`); }
   }
 
-  throw new Error(`Greška: ${errors.join(" | ")}`);
-}
-
-async function runGemini(sys: string, history: any[], userText: string, attachments: any[]) {
-  const gHist: GeminiMessage[] = history.slice(-3).map(t => ({ role: t.role === "user" ? "user" : "model", parts: [{ text: t.content }] }));
-  const userParts: GeminiPart[] = [{ text: userText || "(bez teksta)" }];
-  for (const a of attachments) if (a.kind === "image" && a.dataUrl) {
-    const m = /^data:([^;]+);base64,(.+)$/.exec(a.dataUrl);
-    if (m) userParts.push({ inline_data: { mime_type: m[1], data: m[2] } });
+  // 2. POKUŠAJ: NVIDIA (Novi model umjesto ugašenog)
+  if (hasKey("nvidia")) {
+    try {
+      // meta/llama-3.1-8b-instruct je trenutno najstabilniji besplatni model na Nvidiji
+      return await nvidiaChat("meta/llama-3.1-8b-instruct", [
+        { role: "system", content: finalSys },
+        ...slimHistory,
+        { role: "user", content: userText }
+      ]);
+    } catch (e: any) { errors.push(`NVIDIA: ${e.message}`); }
   }
-  gHist.push({ role: "user", parts: userParts });
-  return geminiChat(sys, gHist);
+
+  // 3. POKUŠAJ: GROQ (Smanjen payload da izbjegnemo 413)
+  if (hasKey("groq")) {
+    try {
+      return await groqChat([
+        { role: "system", content: finalSys },
+        ...slimHistory.map(h => ({ role: h.role === "user" ? "user" : "assistant", content: h.content })),
+        { role: "user", content: userText }
+      ]);
+    } catch (e: any) { errors.push(`Groq: ${e.message}`); }
+  }
+
+  // 4. POKUŠAJ: GEMINI
+  if (hasKey("gemini")) {
+    try {
+      const gHist: GeminiMessage[] = slimHistory.map(t => ({ 
+        role: t.role === "user" ? "user" : "model", 
+        parts: [{ text: t.content }] 
+      }));
+      gHist.push({ role: "user", parts: [{ text: userText }] });
+      return await geminiChat(finalSys, gHist);
+    } catch (e: any) { errors.push(`Gemini: ${e.message}`); }
+  }
+
+  throw new Error(`Svi mozgovi su blokirani. Detalji: ${errors.join(" | ")}`);
 }

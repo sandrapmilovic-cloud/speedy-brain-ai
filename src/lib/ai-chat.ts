@@ -1,4 +1,4 @@
-// ══ ANDROMEDA AI Mozak v18.4 — "ULTRA-PRECISION & ELITE LIST" ══
+// ══ ANDROMEDA AI Mozak v18.5 — "LOGICAL GUARD" (FIX ZA IPSWICH/ULJANIK GREŠKU) ══
 import { geminiChat } from "./gemini";
 import { openrouterChat } from "./openrouter";
 import { hasKey } from "./storage";
@@ -7,31 +7,28 @@ import { loadHtFt, htFtDirectives } from "./htft";
 
 export async function askAi(userText: string, history: any[]): Promise<string> {
   const market = detectMarket(userText);
-  const htft = loadHtFt();
-  const directives = htFtDirectives(htft, market);
+  const directives = htFtDirectives(loadHtFt(), market);
 
-  // --- STROGI PROTOKOL ZA VISOKU TOČNOST ---
-  const SYSTEM_PROMPT = `Ti si LUNA, elitni Oracle Andromeda sustava. 
-Tvoj ton: Prijateljski ("šefe", "brate"), ali tvoja analiza je brutalno matematička.
+  const SYSTEM_PROMPT = `Ti si LUNA, Oracle Andromeda sustava. Tvoj ton je prijateljski, ali tvoja matematika mora biti NEPROBOJNA.
 
-═══ ZAKON VISOKE TOČNOSTI (ULTRA-PRECISION) ═══
-1. MATEMATIČKI PRIORITET: Tvoj odgovor mora biti temeljen na Poissonovoj distribuciji i Dixon-Coles korekciji (v14). Ne pogađaj srcem, pogađaj brojkama.
-2. PODJELA POLUVREMENA: Za HT/FT predikcije koristi omjer 44% golova u 1. poluvremenu.
-3. FILTRIRANJE GREŠKE: Ako je vjerojatnost za točan rezultat ispod 8%, odaberi najstabilniji susjedni rezultat (npr. umjesto 3:0, radije 2:0 ako je sigurnije).
-4. NEMA "ILI-ILI": Korisnik traži tvoju konačnu, najtočniju odluku. Daj JEDAN fiksni tip.
+═══ ZAKON LOGIČKE KONZISTENCIJE (KRITIČNO) ═══
+Prije nego ispišeš par, provjeri:
+- Ako je tip 1/1, rezultat MORA biti pobjeda domaćina (npr. 2:0, 2:1).
+- Ako je tip X/X, rezultat MORA biti remi (npr. 0:0, 1:1).
+- Ako je tip 2/2, rezultat MORA biti pobjeda gosta (npr. 0:2, 1:2).
+- Ako je tip X/1, poluvrijeme mora biti X, a kraj pobjeda domaćina.
+- NIKADA nemoj napisati "HT/FT 2/1" uz rezultat "1:2". To je matematička sramota.
 
-═══ FORMAT ODGOVORA (STRIKTNO PREGLEDNO) ═══
-Evo preciznih analiza, [brate/šefe]! Sustav je kalibriran na visoku točnost:
+═══ FORMAT ODGOVORA ═══
+Evo precizne liste, šefe:
 
-⚽ **[DOMAĆIN] – [GOST]**
-HT/FT: **[Tip]** · Rezultat: **[Točan Rezultat]** · Sigurnost: **[X%]**
-(Kratko obrazloženje: λ_dom vs λ_gost i ključni faktor.)
+⚽ **[DOMAĆIN] vs [GOST]**
+HT/FT: **[Tip]** | Rezultat: **[Točan Rezultat]**
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━
+(Samo čista lista, bez suvišnog teksta.)
 
-═══ REVIZIJSKI AUDIT (Oracle v18.4) ═══
-λ_total=[X.XX] · Poisson_match=DA · Dixon-Coles=AKTIVAN · Status: ELITNA TOČNOST
-
+═══ REVIZIJA ═══
+Status: LOGIČKI PROVJERENO · Matematika: Poisson v14 
 \n${directives}`;
 
   const cleanHistory = history.slice(-3).map(h => ({ 
@@ -39,7 +36,7 @@ HT/FT: **[Tip]** · Rezultat: **[Točan Rezultat]** · Sigurnost: **[X%]**
     content: h.content 
   }));
 
-  // 1. POKUŠAJ: Google Gemini 3.8 Flash (Najbolji za matematiku i logiku)
+  // 1. PRIORITET: Gemini 3.8
   if (hasKey("gemini")) {
     try {
       const gHist = history.slice(-3).map(h => ({
@@ -48,10 +45,10 @@ HT/FT: **[Tip]** · Rezultat: **[Točan Rezultat]** · Sigurnost: **[X%]**
       }));
       gHist.push({ role: "user", parts: [{ text: userText }] });
       return await geminiChat(SYSTEM_PROMPT, gHist);
-    } catch (e) { console.error("Gemini fail, idem na fallback..."); }
+    } catch (e) { console.error("Gemini fail..."); }
   }
 
-  // 2. FALLBACK: OpenRouter (openrouter/free)
+  // 2. FALLBACK: OpenRouter
   if (hasKey("openrouter")) {
     try {
       return await openrouterChat("openrouter/free", [
@@ -62,5 +59,5 @@ HT/FT: **[Tip]** · Rezultat: **[Točan Rezultat]** · Sigurnost: **[X%]**
     } catch (e) { console.error("OpenRouter fail..."); }
   }
 
-  throw new Error("Svi mozgovi su blokirani. Provjeri API ključeve u Postavkama.");
+  throw new Error("Greška u povezivanju s mozgom.");
 }

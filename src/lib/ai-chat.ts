@@ -1,71 +1,49 @@
-// ══ ANDROMEDA AI Mozak v19.6 — "THE INTERPRETER" (FIX ZA DOMAĆIN/GOST) ══
+// ══ ANDROMEDA AI Mozak v19.7 — "THE MATH ARCHITECT" (HT/FT GOL VALIDATOR) ══
 import { geminiChat } from "./gemini";
 import { openrouterChat } from "./openrouter";
 import { hasKey } from "./storage";
-import { calculateMomentum } from "./momentum";
-import { getTacticalProfile } from "./tactics";
 import { loadHtFt, htFtDirectives } from "./htft";
 
 export async function askAi(userText: string, history: any[]): Promise<string> {
-  const market = "htft";
-  const directives = htFtDirectives(loadHtFt(), market);
+  const directives = htFtDirectives(loadHtFt(), "htft");
 
   const SYSTEM_PROMPT = `Ti si LUNA, Ultimate Oracle. 
-TVOJA MATEMATIKA I OZNAKE MORAJU BITI SAVRŠENO USKLAĐENE.
+TVOJA MATEMATIKA JE TVOJ OBRAZ. NE SMIJEŠ GRIJEŠITI.
 
-═══ STROGI ZAKON OZNAKA ═══
-- BROJ 1 = DOMAĆIN (Uvijek prvi navedeni tim u paru).
-- BROJ 2 = GOST (Uvijek drugi navedeni tim u paru).
-- OZNAKA X = NERIJEŠENO.
+═══ ZAKON POLUVREMENA (STROGO) ═══
+1. AKO JE TIP 2/1 (Preokret):
+   - To znači da GOST vodi na HT, a DOMAĆIN dobiva na FT.
+   - REZULTAT MORA biti npr. 2:1, 3:1, 3:2. (Gost MORA imati barem 1 gol).
+   - ZABRANJENO: Rezultat 1:0, 2:0 ili 3:0 uz tip 2/1.
 
-═══ LOGIČKI VALIDATOR (OBAVEZNO) ═══
-Prije nego ispišeš par, provjeri ovu tablicu:
-1. Pobjeda GOSTA (npr. 0:2, 1:2, 0:1) -> HT/FT MORA završiti na /2 (npr. X/2, 2/2, 1/2).
-   - STROGO ZABRANJENO: Pisati X/1 ili 1/1 ako gost pobjeđuje.
-2. Pobjeda DOMAĆINA (npr. 1:0, 2:1, 3:0) -> HT/FT MORA završiti na /1 (npr. X/1, 1/1, 2/1).
-   - STROGO ZABRANJENO: Pisati X/2 ili 2/2 ako domaćin pobjeđuje.
-3. NERIJEŠENO (npr. 1:1, 0:0) -> HT/FT MORA biti X/X, 1/X ili 2/X.
+2. AKO JE TIP 1/2 (Preokret):
+   - To znači da DOMAĆIN vodi na HT, a GOST dobiva na FT.
+   - REZULTAT MORA biti npr. 1:2, 1:3, 2:3. (Domaćin MORA imati barem 1 gol).
+   - ZABRANJENO: Rezultat 0:1, 0:2 ili 0:3 uz tip 1/2.
 
-═══ TVOJ STIL I FORMAT ═══
-Budi 'stari vuk', koristi "šefe", "brate". Odgovaraj pregledno:
+3. AKO JE REZULTAT 1:0 ili 2:0:
+   - Tip MOŽE biti samo 1/1 ili X/1.
 
-⚽ **[DOMAĆIN] vs [GOST]**
-HT/FT: **[Oznaka]** | Rezultat: **[Rezultat]**
-[Umor/Taktika: Kratka rečenica zašto taj tip.]
+═══ JEZIK I STIL ═══
+- Odgovaraj ISKLJUČIVO na HRVATSKOM jeziku (brate, šefe).
+- Prvi red: ⚽ **[DOMAĆIN] vs [GOST]**
+- Drugi red: HT/FT: **[Tip]** | Rezultat: **[Rezultat]**
+- Treći red: [Kratka analiza umora i stila]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ═══ REVIZIJSKI STATUS ═══
-Interpreter: v19.6 (Fix 1/2) | Logic-Guard: MAXIMUM | Status: LOGIČKI PROVJERENO
+Validator: v19.7 (Preokret-Fix) | Math-Guard: ACTIVE | Status: NEPROBOJNO
 \n${directives}`;
 
-  const cleanHistory = history.slice(-3).map(h => ({ 
-    role: h.role === "assistant" ? "model" : h.role, 
-    content: h.content 
+  // Optimizirano slanje povijesti
+  const historyClean = history.slice(-3).map(h => ({
+    role: h.role === "assistant" ? "model" : h.role,
+    parts: [{ text: h.content }]
   }));
 
-  // 1. PRIORITET: Google Gemini 3.8 Flash (Prime Logic)
   if (hasKey("gemini")) {
     try {
-      const gHist = history.slice(-3).map(h => ({
-        role: h.role === "user" ? "user" : "model",
-        parts: [{ text: h.content }]
-      }));
-      gHist.push({ role: "user", parts: [{ text: userText }] });
-      return await geminiChat(SYSTEM_PROMPT, gHist);
+      historyClean.push({ role: "user", parts: [{ text: userText }] });
+      return await geminiChat(SYSTEM_PROMPT, historyClean as any);
     } catch (e) { console.error("Gemini fail..."); }
   }
-
-  // 2. FALLBACK: OpenRouter (Backup Logic)
-  if (hasKey("openrouter")) {
-    try {
-      return await openrouterChat("openrouter/free", [
-        { role: "system", content: SYSTEM_PROMPT },
-        ...history.slice(-3).map(h => ({ role: h.role, content: h.content })),
-        { role: "user", content: userText }
-      ]);
-    } catch (e) { console.error("OpenRouter fail..."); }
-  }
-
-  throw new Error("Povezivanje nije uspjelo.");
-}
-

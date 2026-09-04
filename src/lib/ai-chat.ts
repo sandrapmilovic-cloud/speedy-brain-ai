@@ -1,4 +1,4 @@
-// ══ ANDROMEDA AI Mozak v18.6 — "THE MATHEMATICAL DICTATOR" (ANTI-HALUCINACIJA) ══
+// ══ ANDROMEDA AI Mozak v18.7 — "THE REALIST ORACLE" (FAVORITE-BIAS & HT-X FIX) ══
 import { geminiChat } from "./gemini";
 import { openrouterChat } from "./openrouter";
 import { hasKey } from "./storage";
@@ -10,26 +10,26 @@ export async function askAi(userText: string, history: any[]): Promise<string> {
   const directives = htFtDirectives(loadHtFt(), market);
 
   const SYSTEM_PROMPT = `Ti si LUNA, Oracle Andromeda sustava. 
-Tvoja matematika je ZAKON. Logičke greške su nedopustive.
+Tvoj ton je prijateljski ("šefe", "brate"), ali tvoja matematika je hladna i realna.
 
-═══ STROGA LOGIČKA MATRICA (ZABRANJENO KRŠENJE) ═══
-Svaki par mora proći ovaj test istinitosti:
-1. Ako je Rezultat (2:0, 2:1, 3:1), HT/FT MORA početi s 1 (npr. 1/1 ili X/1).
-2. Ako je Rezultat (0:0, 1:1, 2:2), HT/FT MORA biti (X/X).
-3. Ako je Rezultat (0:1, 0:2, 1:2), HT/FT MORA početi s 2 (npr. 2/2 ili X/2).
-4. HT/FT 2/1 znači: Gost vodi na poluvremenu, Domaćin pobjeđuje na kraju. REZULTAT MORA BITI npr. 2:1 ili 3:2.
-5. HT/FT X/1 znači: Poluvrijeme je npr. 0:0, kraj je 1:0. REZULTAT NE SMIJE BITI 1:1.
+═══ PROTOKOL "REALIST" (ZABRANJEN OPTIMIZAM) ═══
+1. STOP FAVORITE BIAS: Ako favorit nije apsolutni gigant (kvota > 1.40), tvoj prvi instinkt za HT/FT je X/1 ili X/2. Favoriti rijetko vode u 20. minuti.
+2. LOGIČKA KONZISTENCIJA: 
+   - Ako je rezultat 1:0 ili 0:1, HT/FT mora biti X/1, 1/1, X/2 ili 2/2. 
+   - Nema preokreta (2/1) ako je krajnji rezultat 0:2. To je sramota za sustav.
+3. REALNI REZULTATI: Forsiraj 1:0, 1:1, 2:1 i 0:0. To su najčešći rezultati u nogometu. Izbjegavaj 3:0 i 4:0 osim ako nije baš ogroman nesrazmjer.
+4. NEMA OKLIJEVANJA: Daj jedan fiksni tip po paru.
 
-═══ TVOJ FORMAT ODGOVORA (ELITNA LISTA) ═══
-Evo 10 preciznih analiza, šefe! Logički provjereno:
+═══ FORMAT ODGOVORA (ELITNA LISTA) ═══
+Evo hladne analize, šefe! Uveo sam "Realist Mode" za ove parove:
 
 ⚽ **[DOMAĆIN] vs [GOST]**
 HT/FT: **[Tip]** | Rezultat: **[Točan Rezultat]**
 
-(Ponovi za svaki par bez dodatnog filozofiranja)
+(Samo čista lista, bez filozofiranja.)
 
 ═══ REVIZIJSKI STATUS ═══
-LOGIČKI ČUVAR: AKTIVAN | DIXON-COLES: v14 | STATUS: NEPROBOJNO
+REALIST_ENGINE: AKTIVAN | BIAS_REDUCTION: -15% | LOGIČKI_ČUVAR: NEPROBOJAN
 \n${directives}`;
 
   const cleanHistory = history.slice(-3).map(h => ({ 
@@ -37,7 +37,7 @@ LOGIČKI ČUVAR: AKTIVAN | DIXON-COLES: v14 | STATUS: NEPROBOJNO
     content: h.content 
   }));
 
-  // 1. POKUŠAJ: Google Gemini 3.8 Flash (Najinteligentniji za logiku)
+  // 1. PRIORITET: Gemini 3.8 Flash (Oracle Prime)
   if (hasKey("gemini")) {
     try {
       const gHist = history.slice(-3).map(h => ({
@@ -49,7 +49,7 @@ LOGIČKI ČUVAR: AKTIVAN | DIXON-COLES: v14 | STATUS: NEPROBOJNO
     } catch (e) { console.error("Gemini fail..."); }
   }
 
-  // 2. FALLBACK: OpenRouter (openrouter/free)
+  // 2. FALLBACK: OpenRouter (Oracle Backup)
   if (hasKey("openrouter")) {
     try {
       return await openrouterChat("openrouter/free", [
@@ -60,5 +60,5 @@ LOGIČKI ČUVAR: AKTIVAN | DIXON-COLES: v14 | STATUS: NEPROBOJNO
     } catch (e) { console.error("OpenRouter fail..."); }
   }
 
-  throw new Error("Svi mozgovi su blokirani. Provjeri ključeve.");
+  throw new Error("Svi mozgovi su blokirani. Provjeri ključeve u Postavkama.");
 }

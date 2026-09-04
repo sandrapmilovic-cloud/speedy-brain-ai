@@ -1,10 +1,17 @@
-// Google Gemini API klijent (2.0 Flash) — direktan poziv iz preglednika.
+// Google Gemini API klijent — direktan poziv iz preglednika.
 import { getKey } from "./storage";
 
-// gemini-flash-latest uvijek pokazuje na najnoviji stabilni Flash model
-// (izbjegava probleme kad Google deprecira staru verziju kao 2.0-flash).
-const MODEL = "gemini-flash-latest";
-const URL_BASE = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+// Primarni model je uvijek najnoviji stabilni Flash. Ako Google deprecira ili
+// privremeno ugasi neki model (404/400), automatski prelazimo na sljedeći.
+const MODEL_CHAIN = [
+  "gemini-flash-latest",
+  "gemini-2.5-flash",
+  "gemini-flash-lite-latest",
+  "gemini-2.0-flash",
+];
+const urlFor = (m: string) =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`;
+
 
 function humanizeGeminiError(status: number, body: string): string {
   let msg = body;

@@ -1,4 +1,4 @@
-// ══ ANDROMEDA AI Mozak v18.5 — "LOGICAL GUARD" (FIX ZA IPSWICH/ULJANIK GREŠKU) ══
+// ══ ANDROMEDA AI Mozak v18.6 — "THE MATHEMATICAL DICTATOR" (ANTI-HALUCINACIJA) ══
 import { geminiChat } from "./gemini";
 import { openrouterChat } from "./openrouter";
 import { hasKey } from "./storage";
@@ -9,26 +9,27 @@ export async function askAi(userText: string, history: any[]): Promise<string> {
   const market = detectMarket(userText);
   const directives = htFtDirectives(loadHtFt(), market);
 
-  const SYSTEM_PROMPT = `Ti si LUNA, Oracle Andromeda sustava. Tvoj ton je prijateljski, ali tvoja matematika mora biti NEPROBOJNA.
+  const SYSTEM_PROMPT = `Ti si LUNA, Oracle Andromeda sustava. 
+Tvoja matematika je ZAKON. Logičke greške su nedopustive.
 
-═══ ZAKON LOGIČKE KONZISTENCIJE (KRITIČNO) ═══
-Prije nego ispišeš par, provjeri:
-- Ako je tip 1/1, rezultat MORA biti pobjeda domaćina (npr. 2:0, 2:1).
-- Ako je tip X/X, rezultat MORA biti remi (npr. 0:0, 1:1).
-- Ako je tip 2/2, rezultat MORA biti pobjeda gosta (npr. 0:2, 1:2).
-- Ako je tip X/1, poluvrijeme mora biti X, a kraj pobjeda domaćina.
-- NIKADA nemoj napisati "HT/FT 2/1" uz rezultat "1:2". To je matematička sramota.
+═══ STROGA LOGIČKA MATRICA (ZABRANJENO KRŠENJE) ═══
+Svaki par mora proći ovaj test istinitosti:
+1. Ako je Rezultat (2:0, 2:1, 3:1), HT/FT MORA početi s 1 (npr. 1/1 ili X/1).
+2. Ako je Rezultat (0:0, 1:1, 2:2), HT/FT MORA biti (X/X).
+3. Ako je Rezultat (0:1, 0:2, 1:2), HT/FT MORA početi s 2 (npr. 2/2 ili X/2).
+4. HT/FT 2/1 znači: Gost vodi na poluvremenu, Domaćin pobjeđuje na kraju. REZULTAT MORA BITI npr. 2:1 ili 3:2.
+5. HT/FT X/1 znači: Poluvrijeme je npr. 0:0, kraj je 1:0. REZULTAT NE SMIJE BITI 1:1.
 
-═══ FORMAT ODGOVORA ═══
-Evo precizne liste, šefe:
+═══ TVOJ FORMAT ODGOVORA (ELITNA LISTA) ═══
+Evo 10 preciznih analiza, šefe! Logički provjereno:
 
 ⚽ **[DOMAĆIN] vs [GOST]**
 HT/FT: **[Tip]** | Rezultat: **[Točan Rezultat]**
 
-(Samo čista lista, bez suvišnog teksta.)
+(Ponovi za svaki par bez dodatnog filozofiranja)
 
-═══ REVIZIJA ═══
-Status: LOGIČKI PROVJERENO · Matematika: Poisson v14 
+═══ REVIZIJSKI STATUS ═══
+LOGIČKI ČUVAR: AKTIVAN | DIXON-COLES: v14 | STATUS: NEPROBOJNO
 \n${directives}`;
 
   const cleanHistory = history.slice(-3).map(h => ({ 
@@ -36,7 +37,7 @@ Status: LOGIČKI PROVJERENO · Matematika: Poisson v14
     content: h.content 
   }));
 
-  // 1. PRIORITET: Gemini 3.8
+  // 1. POKUŠAJ: Google Gemini 3.8 Flash (Najinteligentniji za logiku)
   if (hasKey("gemini")) {
     try {
       const gHist = history.slice(-3).map(h => ({
@@ -48,7 +49,7 @@ Status: LOGIČKI PROVJERENO · Matematika: Poisson v14
     } catch (e) { console.error("Gemini fail..."); }
   }
 
-  // 2. FALLBACK: OpenRouter
+  // 2. FALLBACK: OpenRouter (openrouter/free)
   if (hasKey("openrouter")) {
     try {
       return await openrouterChat("openrouter/free", [
@@ -59,5 +60,5 @@ Status: LOGIČKI PROVJERENO · Matematika: Poisson v14
     } catch (e) { console.error("OpenRouter fail..."); }
   }
 
-  throw new Error("Greška u povezivanju s mozgom.");
+  throw new Error("Svi mozgovi su blokirani. Provjeri ključeve.");
 }

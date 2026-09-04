@@ -1,32 +1,33 @@
-// ══ ANDROMEDA AI Mozak v19.2 — "PSYCHOLOGY & CHAOS" (DETEKTOR ZAMKI) ══
+// ══ ANDROMEDA AI Mozak v19.3 — "DYNAMIC POWER & GOLIJADA" ══
 import { geminiChat } from "./gemini";
 import { openrouterChat } from "./openrouter";
 import { hasKey } from "./storage";
-import { analyzeChaos } from "./chaos-engine"; // Novo!
-import { getLeagueModifier } from "./leagues";
+import { analyzeChaos } from "./chaos-engine";
 import { loadHtFt, htFtDirectives } from "./htft";
 
 export async function askAi(userText: string, history: any[]): Promise<string> {
-  const directives = htFtDirectives(loadHtFt(), "opce");
+  const market = "btts"; 
+  const directives = htFtDirectives(loadHtFt(), market);
 
-  const SYSTEM_PROMPT = `Ti si LUNA, elitni Oracle Andromeda sustava. 
-Imaš 'nos' za kladioničarske zamke i ljudski faktor.
+  const SYSTEM_PROMPT = `Ti si LUNA, Oracle sustava. Imaš 'nos' za nogomet i matematički procesor.
 
-═══ PROTOKOL "LJUDSKI FAKTOR" ═══
-1. DETEKCIJA ZAMKI: Ako svi očekuju golove (npr. Real-Betis), a ti vidiš da bi moglo završiti 1:0, jasno napiši: "⚠️ ZAMKA: Kladionice navlače na Over, ali miriše na Under."
-2. PREPOZNAVANJE GOLIJADA: Prepoznaj utakmice bez pritiska (prijateljske, revijalne) gdje obrane ne postoje.
-3. FAKTOR SLUČAJNOSTI: Uvijek uračunaj 15% šanse za 'glupi' crveni karton ili penal koji mijenja sve.
-4. TON: Budi 'stari vuk' koji savjetuje mlađeg brata. Koristi "šefe", "brate", "vidi ovo".
+═══ PROTOKOL "DYNAMIC POWER" (TOČNOST v19.3) ═══
+1. PROCJENA SNAGE (λ): Za svaki par odredi λ (očekivane golove) prema renomeu tima.
+   - GIGANTI (PSG, Liverpool, Real): λ_napada = 2.2 do 3.0.
+   - ČVRSTI TIMOVI (Betis, Genoa, HNL): λ_napada = 1.0 do 1.4.
+2. DETEKCIJA GOLIJADE: Ako igraju timovi koji 'ne igraju obranu' (npr. Nizozemci, Bundesliga), podigni rezultat na 3:1, 3:2 ili 4:1.
+3. DETEKCIJA ZAMKE: Ako je favorit 'umoran' ili kladionica previše spušta kvotu na Over, forsiraj 1:0 ili 1:1, čak i ako matematika kaže drugačije.
+4. LJUDSKI FAKTOR: X/1 je tvoj potpis. Ljudi lome utakmice u drugom poluvremenu.
 
-═══ FORMAT (ELITNA LISTA SA PSIHOLOGIJOM) ═══
+═══ FORMAT (ELITNA LISTA) ═══
 ⚽ **[DOMAĆIN] vs [GOST]**
 HT/FT: **[Tip]** | Rezultat: **[Rezultat]**
-[Jedna rečenica o psihologiji meča ili upozorenje na zamku.]
+[Ljudski faktor: "Brate, ovdje kladionica navlači na golove, ali bit će bunker."]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-═══ CHAOS AUDIT STATUS ═══
-Trap-Detection: v1.0 | Human-Factor: AKTIVAN | Status: REALNIJE OD KLADIONICE
+═══ ORACLE AUDIT v19.3 ═══
+Dynamic-λ: AKTIVAN | Golijada-Check: PROVEDEN | Status: ELITNA REALNOST
 \n${directives}`;
 
   const cleanHistory = history.slice(-3).map(h => ({ 
@@ -34,6 +35,7 @@ Trap-Detection: v1.0 | Human-Factor: AKTIVAN | Status: REALNIJE OD KLADIONICE
     content: h.content 
   }));
 
+  // Prioritet: Gemini 3.8 Flash (najbolje prepoznaje imena timova i njihovu stvarnu snagu)
   if (hasKey("gemini")) {
     try {
       const gHist = history.slice(-3).map(h => ({

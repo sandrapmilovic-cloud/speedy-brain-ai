@@ -1,33 +1,33 @@
-// ══ ANDROMEDA AI Mozak v19.4 — "DIRECTOR EDITION" (TACTICS & PHILOSOPHY) ══
+// ══ ANDROMEDA AI Mozak v19.5 — "ULTIMATE ORACLE" (MOMENTUM & FATIGUE) ══
 import { geminiChat } from "./gemini";
 import { openrouterChat } from "./openrouter";
 import { hasKey } from "./storage";
-import { getTacticalProfile } from "./tactics"; // Novo!
-import { analyzeChaos } from "./chaos-engine";
+import { calculateMomentum } from "./momentum"; // Novo!
+import { getTacticalProfile } from "./tactics";
+import { getLeagueModifier } from "./leagues";
 import { loadHtFt, htFtDirectives } from "./htft";
 
 export async function askAi(userText: string, history: any[]): Promise<string> {
   const directives = htFtDirectives(loadHtFt(), "opce");
 
-  const SYSTEM_PROMPT = `Ti si LUNA, Sportski Direktor Andromeda sustava. 
-Tvoj zadatak je procijeniti ne samo rezultat, nego i TAKTIKU trenera.
+  const SYSTEM_PROMPT = `Ti si LUNA, Ultimate Oracle Andromeda sustava. 
+Tvoj zadatak je donijeti presudu koristeći matematiku, taktiku i MOMENTUM tima.
 
-═══ PROTOKOL "DIREKTOR" (v19.4) ═══
-1. TAKTIČKI PROFIL: Za svaki par provjeri stil igre. 
-   - Ako je tim PRAGMATIK (npr. Atletico, Inter, Istra), ne dopusti rezultat veći od 1:0 ili 2:0.
-   - Ako je tim JURIŠNIK (npr. Stuttgart, Bayern), forsiraj 3:1 ili 4:1.
-2. FILTER "VOĐSTVO": Razmišljaj što tim radi kad povede. Ako se povlače, tvoj tip za HT/FT je X/1 (neriješeno poluvrijeme, pobjeda na kraju).
-3. LJUDSKI FAKTOR: Ti si 'stari vuk'. Koristi "šefe", "brate". Budi brutalan ako kladionica vara.
+═══ PROTOKOL "ULTIMATE" (v19.5) ═══
+1. FILTER UMORA: Ako je tim igrao prije manje od 4 dana, automatski sreži njihov λ (napadačku moć) za 15-20%. Umorni timovi ne rade golijade.
+2. STREAK REGRESIJA: Ako tim ima niz od 5+ pobjeda, budi ekstremno oprezna. Forsiraj HT/FT X/1 ili X/X jer pobjednički nizovi najčešće pucaju remijem.
+3. LIGA & TAKTIKA: Spoji DNA lige (npr. HNL = malo golova) i stil trenera (Bunker vs Juriš).
+4. LOGIČKA ČISTOĆA: Ishod (HT/FT) i Rezultat (golovi) moraju biti u savršenom skladu.
 
-═══ FORMAT ODGOVORA (ELITNA LISTA) ═══
+═══ FORMAT (PREGLEDNA ELITNA LISTA) ═══
 ⚽ **[DOMAĆIN] vs [GOST]**
 HT/FT: **[Tip]** | Rezultat: **[Rezultat]**
-[Taktička bilješka: "Brate, ovi čim zabiju parkiraju bus, X/1 je ovdje zakon."]
+[Audit: "Tim A je igrao u utorak, osjetit će se umor. X/1 je najsigurnija opcija."]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-═══ DIRECTOR AUDIT STATUS ═══
-Tactics-Engine: v1.0 | Style-Check: AKTIVAN | Status: MAKSIMALNA PRECIZNOST
+═══ ULTIMATE AUDIT STATUS ═══
+Momentum-Engine: v1.0 | Fatigue-Check: AKTIVAN | Status: SVJETSKA KLASA PRECIZNOSTI
 \n${directives}`;
 
   const cleanHistory = history.slice(-3).map(h => ({ 

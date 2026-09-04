@@ -42,22 +42,34 @@ export interface GeminiMessage {
 export async function geminiChat(system: string, history: GeminiMessage[]): Promise<string> {
   const key = getKey("gemini");
   if (!key) throw new Error("Nedostaje Gemini ključ");
-  const res = await fetch(`${URL_BASE}?key=${encodeURIComponent(key)}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      systemInstruction: { role: "user", parts: [{ text: system }] },
-      contents: history,
-      generationConfig: { temperature: 0.7, maxOutputTokens: 4096 },
-    }),
-  });
-  if (!res.ok) throw new Error(humanizeGeminiError(res.status, await res.text()));
-  const j = (await res.json()) as {
-    candidates?: { content?: { parts?: { text?: string }[] } }[];
-  };
-  const text = j.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
-  if (!text) throw new Error("Gemini je vratio prazan odgovor");
-  return text;
+  let lastErr = "";
+  for (const model of MODEL_CHAIN) {
+    const res = await fetch(`${urlFor(model)}?key=${encodeURIComponent(key)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: { role: "user", parts: [{ text: system }] },
+        contents: history,
+        generationConfig: { temperature: 0.7, maxOutputTokens: 4096 },
+      }),
+    });
+    if (!res.ok) {
+      const err = humanizeGeminiError(res.status, await res.text());
+      // Ključ/limit greške nema smisla ponavljati na drugom modelu.
+      if (res.status === 401 || res.status === 403 || res.status === 429 || /API key/i.test(err))
+        throw new Error(err);
+      lastErr = err;
+      continue;
+    }
+    const j = (await res.json()) as {
+      candidates?: { content?: { parts?: { text?: string }[] } }[];
+    };
+    const text = j.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
+    if (text) return text;
+    lastErr = "Gemini je vratio prazan odgovor";
+  }
+  throw new Error(lastErr || "Gemini je vratio prazan odgovor");
+
 }
 
 export async function testGemini(): Promise<{ ok: boolean; msg: string }> {

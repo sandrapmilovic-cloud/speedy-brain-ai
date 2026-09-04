@@ -111,7 +111,7 @@ function PostavkePage() {
       <KeyCard
         name="gemini"
         title="Google Gemini API"
-        subtitle="Primarni AI mozak — Gemini 2.0 Flash"
+        subtitle="Primarni AI mozak — Gemini Flash (najnovija verzija) · auto-prelazak na 2.5 Flash / Flash-Lite"
         href="https://aistudio.google.com/app/apikey"
         hrefLabel="Nabavi Gemini ključ"
         tester={testGemini}
@@ -119,7 +119,7 @@ function PostavkePage() {
       <KeyCard
         name="groq"
         title="Groq API"
-        subtitle="Fallback mozak — Llama 3.3 70B na Groqu"
+        subtitle="Fallback mozak — Llama 3.3 70B Versatile · oblik gsk_… · rezerve: Llama 3.1 8B, GPT-OSS"
         href="https://console.groq.com/keys"
         hrefLabel="Nabavi Groq ključ"
         tester={testGroq}
@@ -145,7 +145,7 @@ function PostavkePage() {
       <KeyCard
         name="openrouter"
         title="OpenRouter (preporučeno)"
-        subtitle="Besplatni modeli · oblik sk-or-… · desetci specijalista"
+        subtitle="Besplatni modeli · oblik sk-or-v1-… · desetci specijalista uz automatski lanac rezervi"
         href="https://openrouter.ai/keys"
         hrefLabel="Nabavi OpenRouter ključ"
         tester={testOpenRouter}
@@ -154,7 +154,7 @@ function PostavkePage() {
       <KeyCard
         name="nvidia"
         title="NVIDIA NIM (preporučeno)"
-        subtitle="Neograničen besplatni mozak · oblik nvapi-… · svi besplatni modeli za nogometne predikcije"
+        subtitle="Neograničen besplatni mozak · oblik nvapi-… · 18 besplatnih modela za nogometne predikcije (ide kroz naš proxy)"
         href="https://build.nvidia.com/explore/discover"
         hrefLabel="Nabavi NVIDIA NIM ključ"
         tester={testNvidia}
@@ -611,8 +611,8 @@ function BrainRouter() {
             className="mt-1 w-full rounded-lg border border-input bg-background/60 px-3 py-2 text-sm"
           >
             <option value="openrouter">OpenRouter (preporučeno)</option>
-            <option value="gemini">Google Gemini</option>
-            <option value="groq">Groq (Llama 3.3)</option>
+            <option value="gemini">Google Gemini Flash</option>
+            <option value="groq">Groq (Llama 3.3 70B Versatile)</option>
             <option value="nvidia">NVIDIA NIM (preporučeno)</option>
             <option value="huggingface">Hugging Face</option>
           </select>

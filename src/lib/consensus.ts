@@ -266,7 +266,8 @@ export async function runConsensus(
 }
 
 /** Blok teksta koji se ubacuje u sistemski prompt finalnog odgovora. */
-export function consensusBriefing(c: ConsensusResult): string {
+export function consensusBriefing(c: ConsensusResult | null): string {
+  if (!c) return "";
   const pct = (x: number) => `${(x * 100).toFixed(1)}%`;
   const conf =
     c.agreement >= 0.75 ? "VISOKA (modeli se slažu)" : c.agreement >= 0.5 ? "SREDNJA" : "NISKA (modeli se razilaze)";

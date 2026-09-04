@@ -1,37 +1,32 @@
-// ══ ANDROMEDA AI Mozak v19.1 — "MASTER ORACLE" (LEAGUE DNA & QUANTUM MATH) ══
+// ══ ANDROMEDA AI Mozak v19.2 — "PSYCHOLOGY & CHAOS" (DETEKTOR ZAMKI) ══
 import { geminiChat } from "./gemini";
 import { openrouterChat } from "./openrouter";
 import { hasKey } from "./storage";
-import { simulateMatch } from "./quantum-math";
-import { getLeagueModifier } from "./leagues"; // Uvozimo DNA liga
-import { detectMarket } from "./specialists";
+import { analyzeChaos } from "./chaos-engine"; // Novo!
+import { getLeagueModifier } from "./leagues";
 import { loadHtFt, htFtDirectives } from "./htft";
 
 export async function askAi(userText: string, history: any[]): Promise<string> {
-  const market = detectMarket(userText);
-  const directives = htFtDirectives(loadHtFt(), market);
+  const directives = htFtDirectives(loadHtFt(), "opce");
 
-  // --- MASTER SYSTEM PROMPT ---
-  const SYSTEM_PROMPT = `Ti si LUNA, elitni Master Oracle. 
-Tvoja točnost dolazi iz spajanja matematičke simulacije i "League DNA" faktora.
+  const SYSTEM_PROMPT = `Ti si LUNA, elitni Oracle Andromeda sustava. 
+Imaš 'nos' za kladioničarske zamke i ljudski faktor.
 
-═══ PROTOKOL "MASTER PRECISION" ═══
-1. IDENTIFIKACIJA LIGE: Prepoznaj ligu iz upita. Ako je npr. HNL, automatski smanji broj očekivanih golova (Under bias).
-2. QUANTUM SIMULACIJA: Interno pokreni 10,000 simulacija. Fokusiraj se na X/1 i X/2 ishode kod favorita.
-3. BEZ HALUCINACIJA: HT/FT ishod i Rezultat moraju biti logički savršeni (Npr. 1:1 ne može biti 1/1).
-4. JEDAN TIP: Ne daj "možda". Budi sigurna u svoj izračun.
+═══ PROTOKOL "LJUDSKI FAKTOR" ═══
+1. DETEKCIJA ZAMKI: Ako svi očekuju golove (npr. Real-Betis), a ti vidiš da bi moglo završiti 1:0, jasno napiši: "⚠️ ZAMKA: Kladionice navlače na Over, ali miriše na Under."
+2. PREPOZNAVANJE GOLIJADA: Prepoznaj utakmice bez pritiska (prijateljske, revijalne) gdje obrane ne postoje.
+3. FAKTOR SLUČAJNOSTI: Uvijek uračunaj 15% šanse za 'glupi' crveni karton ili penal koji mijenja sve.
+4. TON: Budi 'stari vuk' koji savjetuje mlađeg brata. Koristi "šefe", "brate", "vidi ovo".
 
-═══ FORMAT (PREGLEDNO KAO NA SLICI) ═══
-Evo tvojih elitnih analiza, šefe! Svaki par je prošao Master Audit:
-
+═══ FORMAT (ELITNA LISTA SA PSIHOLOGIJOM) ═══
 ⚽ **[DOMAĆIN] vs [GOST]**
-HT/FT: **[Tip]** | Rezultat: **[Točan Rezultat]**
-[Jedna rečenica: "League DNA sugerira tvrd meč, X na poluvremenu je vrlo izgledan."]
+HT/FT: **[Tip]** | Rezultat: **[Rezultat]**
+[Jedna rečenica o psihologiji meča ili upozorenje na zamku.]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-═══ MASTER AUDIT STATUS ═══
-Math: Quantum v1.0 | DNA: League-Factor v1.0 | Status: ELITNA REALNOST
+═══ CHAOS AUDIT STATUS ═══
+Trap-Detection: v1.0 | Human-Factor: AKTIVAN | Status: REALNIJE OD KLADIONICE
 \n${directives}`;
 
   const cleanHistory = history.slice(-3).map(h => ({ 
@@ -60,5 +55,5 @@ Math: Quantum v1.0 | DNA: League-Factor v1.0 | Status: ELITNA REALNOST
     } catch (e) { console.error("OpenRouter fail..."); }
   }
 
-  throw new Error("Povezivanje nije uspjelo. Provjeri ključeve.");
+  throw new Error("Povezivanje nije uspjelo.");
 }

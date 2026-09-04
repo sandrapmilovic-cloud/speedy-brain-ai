@@ -95,12 +95,19 @@ export async function askAi(
   const deadline = turbo ? 20000 : 55000;
 
   // Paralelno procesiranje motora
+  // Pomoćni motori nikad ne smiju srušiti odgovor — ako padnu, idemo bez briefinga.
+  const soft = <T,>(p: Promise<T>) =>
+    withDeadline(p, deadline).catch((e) => {
+      console.warn("Pomoćni motor preskočen:", e);
+      return null;
+    });
+
   const [omniRes, consensusRes] = await Promise.all([
-    (omni.enabled && (market === "btts" || market === "ou25")) 
-      ? withDeadline(runOmni(market as any, userText, "", { turbo }), deadline) 
+    (omni.enabled && (market === "btts" || market === "ou25"))
+      ? soft(runOmni(market as any, userText, "", { turbo }))
       : Promise.resolve(null),
-    (prefs.ensemble !== false && market !== "opce") 
-      ? withDeadline(runConsensus(market, userText, "", { turbo }), deadline) 
+    (prefs.ensemble !== false && market !== "opce")
+      ? soft(runConsensus(market, userText, "", { turbo }))
       : Promise.resolve(null)
   ]);
 

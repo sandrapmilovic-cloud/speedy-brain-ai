@@ -124,6 +124,52 @@ function parseMember(raw: string): Omit<MemberEstimate, "model" | "name"> | null
   }
 }
 
+interface TeamMember {
+  id: string;
+  name: string;
+  provider: "openrouter" | "nvidia" | "groq" | "gemini";
+}
+
+/** Sastavlja ansambl od svih mozgova za koje postoji ključ (ne samo OpenRoutera). */
+function buildTeam(market: Market, size: number): TeamMember[] {
+  const out: TeamMember[] = [];
+  if (hasKey("openrouter")) {
+    for (const s of ensembleForMarket(market, Math.max(3, size))) {
+      out.push({ id: s.id, name: s.name, provider: "openrouter" });
+    }
+  }
+  if (hasKey("nvidia")) {
+    const ids = [...NIM_GOAL_MODELS, ...NIM_MODELS.map((m) => m.id)].filter(
+      (v, i, self) => self.indexOf(v) === i,
+    );
+    for (const id of ids.slice(0, size)) out.push({ id, name: `NIM ${id.split("/").pop()}`, provider: "nvidia" });
+  }
+  if (hasKey("groq")) out.push({ id: "groq", name: "Groq Llama 3.3 70B", provider: "groq" });
+  if (hasKey("gemini")) out.push({ id: "gemini", name: "Gemini Flash", provider: "gemini" });
+  return out.slice(0, Math.max(1, size));
+}
+
+async function memberChat(
+  m: TeamMember,
+  msgs: ORMessage[],
+  o: { temperature: number; maxTokens: number },
+): Promise<string> {
+  const sys = String(msgs[0].content ?? "");
+  const user = String(msgs[1]?.content ?? "");
+  if (m.provider === "openrouter") return openrouterChat(m.id, msgs, { ...o, extraFallbacks: [] });
+  if (m.provider === "nvidia")
+    return nvidiaChat(m.id, [
+      { role: "system", content: sys },
+      { role: "user", content: user },
+    ], { ...o, extraFallbacks: [] });
+  if (m.provider === "groq")
+    return groqChat([
+      { role: "system", content: sys },
+      { role: "user", content: user },
+    ] as GroqMessage[]);
+  return geminiChat(sys, [{ role: "user", parts: [{ text: user }] }]);
+}
+
 /** Pokreće ansambl i vraća spojenu procjenu. Baca grešku ako nitko ne odgovori. */
 export async function runConsensus(
   market: Market,
@@ -135,8 +181,9 @@ export async function runConsensus(
   const sp = loadSuper();
   // Turbo: ansambl ograničen na 3 člana, 1 prolaz, niži maxTokens.
   const teamSize = opts.turbo ? 3 : Math.max(3, Math.min(a.members, 9));
-  const team = ensembleForMarket(market).slice(0, teamSize);
-  if (!team.length) throw new Error("Nema aktivnih modela za ansambl.");
+  const team = buildTeam(market, teamSize);
+  if (!team.length)
+    throw new Error("Ansambl nema nijedan dostupan mozak — unesi barem jedan API ključ u Postavkama.");
   const priorTotal = a.leaguePrior ? leaguePriorTotal(`${userText} ${ctx}`) : 2.68;
   const passes = opts.turbo ? 1 : Math.max(1, Math.min(a.passes, 3));
 
@@ -145,15 +192,14 @@ export async function runConsensus(
       const runs: Omit<MemberEstimate, "model" | "name">[] = [];
       for (let p = 1; p <= passes; p++) {
         try {
-          const raw = await openrouterChat(s.id, memberPrompt(market, userText, ctx, p, priorTotal, sp), {
+          const raw = await memberChat(s, memberPrompt(market, userText, ctx, p, priorTotal, sp), {
             temperature: p === 1 ? 0.15 : 0.45,
             maxTokens: opts.turbo ? 420 : 700,
-            extraFallbacks: [],
           });
           const parsed = parseMember(raw);
           if (parsed) runs.push(parsed);
-        } catch {
-          /* pojedini prolaz smije pasti */
+        } catch (e) {
+          console.warn(`Ansambl član ${s.name} nije uspio:`, e);
         }
       }
       if (!runs.length) throw new Error(`${s.name}: nema valjanog JSON-a`);

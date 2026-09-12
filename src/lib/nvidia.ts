@@ -10,7 +10,22 @@ export const NIM_MODELS = [
 
 export const NIM_GOAL_MODELS = ["meta/llama-3.1-8b-instruct"];
 
-export async function nvidiaChat(model: string, messages: any[]): Promise<string> {
+export interface NimMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
+}
+
+export interface NimCallOptions {
+  temperature?: number;
+  maxTokens?: number;
+  extraFallbacks?: string[];
+}
+
+export async function nvidiaChat(
+  model: string,
+  messages: NimMessage[] | any[],
+  opts: NimCallOptions = {},
+): Promise<string> {
   const key = getKey("nvidia");
   if (!key) throw new Error("Ključ nedostaje");
 
@@ -18,7 +33,12 @@ export async function nvidiaChat(model: string, messages: any[]): Promise<string
     const res = await fetch(URL, {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Nim-Key": key },
-      body: JSON.stringify({ model, messages, temperature: 0.5 })
+      body: JSON.stringify({
+        model,
+        messages,
+        temperature: opts.temperature ?? 0.5,
+        ...(opts.maxTokens ? { max_tokens: opts.maxTokens } : {}),
+      })
     });
     const data = await res.json();
     return data.choices?.[0]?.message?.content?.trim() || "Prazan odgovor";

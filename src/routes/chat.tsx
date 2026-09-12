@@ -124,6 +124,7 @@ function ChatPage() {
       !hasKey("gemini") &&
       !hasKey("groq") &&
       !hasKey("openrouter") &&
+      !hasKey("nvidia") &&
       !hasKey("huggingface")
     ) {
       toast.error("Postavi barem jedan AI ključ u Postavkama (OpenRouter je besplatan).");

@@ -17,7 +17,17 @@ export function specialistDefault(): string {
   return "openrouter/free";
 }
 
-export async function openrouterChat(model: string, messages: ORMessage[]): Promise<string> {
+export interface ORCallOptions {
+  temperature?: number;
+  maxTokens?: number;
+  extraFallbacks?: string[];
+}
+
+export async function openrouterChat(
+  model: string,
+  messages: ORMessage[],
+  opts: ORCallOptions = {},
+): Promise<string> {
   const key = getKey("openrouter");
   if (!key) throw new Error("Ključ nedostaje");
 
@@ -31,7 +41,8 @@ export async function openrouterChat(model: string, messages: ORMessage[]): Prom
     body: JSON.stringify({
       model: model || "openrouter/free",
       messages,
-      temperature: 0.6
+      temperature: opts.temperature ?? 0.6,
+      ...(opts.maxTokens ? { max_tokens: opts.maxTokens } : {}),
     })
   });
 

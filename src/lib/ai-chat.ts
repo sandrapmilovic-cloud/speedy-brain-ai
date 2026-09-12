@@ -18,7 +18,7 @@ export interface ChatTurn {
   role: "user" | "assistant";
   content: string;
   ts: number;
-  attachments?: { name: string; kind: string; path?: string }[];
+  attachments?: { name: string; kind: ChatAttachment["kind"]; path?: string }[];
 }
 
 export interface AskOptions {

@@ -8,6 +8,14 @@ import { hasKey } from "./storage";
 const D = 24 * 60 * 60 * 1000;
 const H6 = 6 * 60 * 60 * 1000;
 
+interface OddsBet {
+  name: string;
+  values: { value: string; odd: string }[];
+}
+interface OddsRow {
+  bookmakers: { bets: OddsBet[] }[];
+}
+
 interface TeamHit {
   team: { id: number; name: string };
 }
@@ -111,9 +119,9 @@ export async function matchDataBrief(userText: string): Promise<string | null> {
           { fixture: fixture.fixture.id },
           { ttlMs: H6 },
         ).catch(() => []),
-        afGet<
-          { bookmakers: { bets: { name: string; values: { value: string; odd: string }[] }[] }[] }[]
-        >("odds", { fixture: fixture.fixture.id }, { ttlMs: H6 }).catch(() => []),
+        afGet<OddsRow[]>("odds", { fixture: fixture.fixture.id }, { ttlMs: H6 }).catch(
+          () => [] as OddsRow[],
+        ),
       ]);
       if (inj.length)
         injuries = inj

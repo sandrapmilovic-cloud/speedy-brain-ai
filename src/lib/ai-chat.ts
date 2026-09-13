@@ -104,16 +104,19 @@ export async function askAi(
   const market = detectMarket(userText);
   const turbo = opts.turbo ?? loadTurbo();
   const attCtx = attachments.length ? attachmentsContextText(attachments) : "";
-  const deadline = turbo ? 20000 : 45000;
+  const deadline = turbo ? 6000 : 25000;
 
   // ── Pomoćni motori paralelno (svaki smije zakazati bez rušenja odgovora)
+  // U TURBO načinu preskačemo spore ansamble (konsenzus/OMNI) — ostaju
+  // lokalni matematički moduli + brzi dohvat stvarnih podataka.
   const omniPrefs = loadOmni();
   const [live, consensus, omniBtts, omniOu] = await Promise.all([
     soft(matchDataBrief(userText), deadline),
-    soft(runConsensus(market, userText, attCtx, { turbo }), deadline),
-    omniPrefs.enabled ? soft(runOmni("btts", userText, attCtx, { turbo }), deadline) : Promise.resolve(null),
-    omniPrefs.enabled ? soft(runOmni("ou25", userText, attCtx, { turbo }), deadline) : Promise.resolve(null),
+    turbo ? Promise.resolve(null) : soft(runConsensus(market, userText, attCtx, { turbo }), deadline),
+    !turbo && omniPrefs.enabled ? soft(runOmni("btts", userText, attCtx, { turbo }), deadline) : Promise.resolve(null),
+    !turbo && omniPrefs.enabled ? soft(runOmni("ou25", userText, attCtx, { turbo }), deadline) : Promise.resolve(null),
   ]);
+
 
   const gf = loadGoalFormula();
   const briefings = [

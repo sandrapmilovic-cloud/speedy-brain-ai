@@ -11,7 +11,7 @@ import { loadGoalFormula, goalFormulaActive, goalFormulaDirectives } from "./goa
 import { loadMastermind, mastermindDirectives } from "./mastermind";
 import { detectMarket, MARKET_LABEL, type Market } from "./specialists";
 import { runConsensus, consensusBriefing } from "./consensus";
-import { runOmni, omniBriefing, loadOmni, type OmniMarket } from "./omni";
+import { runOmni, omniBriefing, loadOmni } from "./omni";
 import { attachmentsContextText, type ChatAttachment } from "./attachments";
 
 export interface ChatTurn {
@@ -51,12 +51,6 @@ async function soft<T>(p: Promise<T>, ms: number): Promise<T | null> {
     console.warn("Pomoćni motor preskočen:", e);
     return null;
   }
-}
-
-function omniMarketOf(market: Market): OmniMarket | null {
-  if (market === "btts") return "btts";
-  if (market === "ou25") return "ou25";
-  return null;
 }
 
 function buildSystemPrompt(market: Market, briefings: string[]): string {

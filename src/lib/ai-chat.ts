@@ -110,16 +110,17 @@ export async function askAi(
 
   // ── Pomoćni motori paralelno (svaki smije zakazati bez rušenja odgovora)
   const omniPrefs = loadOmni();
-  const om = omniMarketOf(market);
-  const [consensus, omni] = await Promise.all([
+  const [consensus, omniBtts, omniOu] = await Promise.all([
     soft(runConsensus(market, userText, attCtx, { turbo }), deadline),
-    om && omniPrefs.enabled ? soft(runOmni(om, userText, attCtx, { turbo }), deadline) : Promise.resolve(null),
+    omniPrefs.enabled ? soft(runOmni("btts", userText, attCtx, { turbo }), deadline) : Promise.resolve(null),
+    omniPrefs.enabled ? soft(runOmni("ou25", userText, attCtx, { turbo }), deadline) : Promise.resolve(null),
   ]);
 
   const gf = loadGoalFormula();
   const briefings = [
     consensusBriefing(consensus),
-    omniBriefing(omni),
+    omniBriefing(omniBtts),
+    omniBriefing(omniOu),
     goalFormulaActive(gf) ? goalFormulaDirectives(gf) : "",
     htFtDirectives(loadHtFt(), market),
     mastermindDirectives(loadMastermind(), market),

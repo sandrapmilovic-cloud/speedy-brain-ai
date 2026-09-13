@@ -13,6 +13,7 @@ import { detectMarket, MARKET_LABEL, type Market } from "./specialists";
 import { runConsensus, consensusBriefing } from "./consensus";
 import { runOmni, omniBriefing, loadOmni } from "./omni";
 import { attachmentsContextText, type ChatAttachment } from "./attachments";
+import { matchDataBrief } from "./matchdata";
 
 export interface ChatTurn {
   role: "user" | "assistant";
@@ -70,14 +71,17 @@ Kad korisnik spomene utakmicu (dvije momčadi), UVIJEK daj sva četiri tipa, ovi
 1) 🎯 GG/NG (BTTS) — tip + sigurnost %
 2) ⚽ Over/Under 2.5 — tip + sigurnost %
 3) 🕐 HT/FT — najvjerojatnija kombinacija + 2 alternative, sa %
-4) 🔢 Konačni rezultat — 3 najvjerojatnija rezultata sa %
+4) 🔢 Konačni rezultat — JEDAN prijedlog rezultata (npr. 2:1) sa sigurnošću %
 Zatim: 💡 Najsigurniji tip dana (jedan), ⚠️ glavni rizik, i sigurnija alternativa.
 
 ═══ PRAVILA TOČNOSTI (obavezno) ═══
 1) Izračuni motora dolje su AUTORITATIVNI. Prepiši njihove postotke; ne izmišljaj svoje niti im proturječi.
 2) Ne izmišljaj formu, xG, ozljede, kartone ni kvote. Ako podatak nedostaje, reci to i zatraži ga.
 3) Svi tipovi moraju biti međusobno konzistentni: GG, Over/Under, HT/FT i rezultat moraju opisivati isti scenarij.
-4) Ako su podaci tanki ili se izvori ne slažu, spusti sigurnost i ponudi sigurniju liniju (Over 1.5, dvostruka šansa, DNB) ili preporuči preskakanje.
+4) Ako blok STVARNI PODACI postoji, nikad ne piši da nemaš podatke — koristi navedenu formu, golove, H2H, izostanke i kvote i pozovi se na njih brojkama.
+5) Daj SAMO JEDAN prijedlog konačnog rezultata (najvjerojatniji) — ne popis rezultata.
+6) Svaki tip mora biti konkretan (npr. "GG DA", "Over 2.5", "1/1", "2:1"), nikad "možda" ili raspon.
+7) Ako su podaci tanki ili se izvori ne slažu, spusti sigurnost i ponudi sigurniju liniju (Over 1.5, dvostruka šansa, DNB) ili preporuči preskakanje.
 5) Logika HT/FT mora pratiti rezultat:
    - 2/1: gost vodi na poluvremenu, domaćin pobjeđuje (2:1, 3:2) — gost mora imati barem 1 gol.
    - 1/2: domaćin vodi na poluvremenu, gost pobjeđuje (1:2, 2:3) — domaćin mora imati barem 1 gol.
@@ -104,7 +108,8 @@ export async function askAi(
 
   // ── Pomoćni motori paralelno (svaki smije zakazati bez rušenja odgovora)
   const omniPrefs = loadOmni();
-  const [consensus, omniBtts, omniOu] = await Promise.all([
+  const [live, consensus, omniBtts, omniOu] = await Promise.all([
+    soft(matchDataBrief(userText), deadline),
     soft(runConsensus(market, userText, attCtx, { turbo }), deadline),
     omniPrefs.enabled ? soft(runOmni("btts", userText, attCtx, { turbo }), deadline) : Promise.resolve(null),
     omniPrefs.enabled ? soft(runOmni("ou25", userText, attCtx, { turbo }), deadline) : Promise.resolve(null),
@@ -112,6 +117,7 @@ export async function askAi(
 
   const gf = loadGoalFormula();
   const briefings = [
+    live ?? "",
     consensusBriefing(consensus),
     omniBriefing(omniBtts),
     omniBriefing(omniOu),

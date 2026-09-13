@@ -8,6 +8,11 @@ import { hasKey } from "./storage";
 const D = 24 * 60 * 60 * 1000;
 const H6 = 6 * 60 * 60 * 1000;
 
+interface InjuryRow {
+  player: { name: string };
+  team: { name: string };
+}
+
 interface OddsBet {
   name: string;
   values: { value: string; odd: string }[];
@@ -113,22 +118,22 @@ export async function matchDataBrief(userText: string): Promise<string | null> {
     let injuries = "nije dostupno";
     let odds = "nisu dostupne";
     if (fixture) {
-      const [inj, od] = await Promise.all([
-        afGet<{ player: { name: string }; team: { name: string }; player_type?: string }[]>(
-          "injuries",
-          { fixture: fixture.fixture.id },
-          { ttlMs: H6 },
-        ).catch(() => []),
-        afGet<OddsRow[]>("odds", { fixture: fixture.fixture.id }, { ttlMs: H6 }).catch(
-          () => [] as OddsRow[],
-        ),
-      ]);
+      const injP = afGet<InjuryRow[]>(
+        "injuries",
+        { fixture: fixture.fixture.id },
+        { ttlMs: H6 },
+      ).catch(() => [] as InjuryRow[]);
+      const oddP = afGet<OddsRow[]>("odds", { fixture: fixture.fixture.id }, { ttlMs: H6 }).catch(
+        () => [] as OddsRow[],
+      );
+      const inj: InjuryRow[] = await injP;
+      const od: OddsRow[] = await oddP;
       if (inj.length)
         injuries = inj
           .slice(0, 12)
           .map((i) => `${i.team?.name}: ${i.player?.name}`)
           .join(", ");
-      const bets = odds?.[0]?.bookmakers?.[0]?.bets ?? [];
+      const bets = od?.[0]?.bookmakers?.[0]?.bets ?? [];
       const pick = (n: string) =>
         bets
           .find((b) => b.name === n)
